@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <div id="loginOverlay">
+        <div class="login-box">
+            <h2><i class="fas fa-user-shield"></i> Admin Login</h2>
+            <p style="margin-bottom: 20px; color: #666;">Enter your PIN to access the dashboard</p>
+            <input type="password" id="pinInput" placeholder="Enter PIN">
+            <button onclick="checkLogin()">Login <i class="fas fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <div class="container" style="max-width: 800px; text-align: left;">
+        <div class="admin-header">
+            <h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+            <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+
+        <div class="settings-card">
+            <h3><i class="fas fa-cogs"></i> Settings</h3>
+
+            <div style="margin-top: 20px;">
+                <label>UPI ID</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="upiIdInput" placeholder="example@upi">
+                    <button onclick="saveUPI()" style="width: auto; white-space: nowrap;"><i class="fas fa-save"></i>
+                        Save</button>
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid #ddd; margin-top: 20px; padding-top: 20px;">
+                <label>Custom QR Code</label>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <input type="file" id="qrInput" accept="image/*" style="padding: 10px;">
+                    <button onclick="uploadQR()" style="width: auto; background: var(--primary-color);"><i
+                            class="fas fa-cloud-upload-alt"></i> Upload</button>
+                    <button onclick="removeQR()" style="width: auto; background: var(--danger-color);"><i
+                            class="fas fa-trash"></i> Reset</button>
+                </div>
+                <div id="previewQR" style="margin-top: 10px;"></div>
+            </div>
+
+            <div style="border-top: 1px solid #ddd; margin-top: 20px; padding-top: 20px;">
+                <label>Background Image</label>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <input type="file" id="bgInput" accept="image/*" style="padding: 10px;">
+                    <button onclick="uploadBG()" style="width: auto; background: var(--secondary-color);"><i
+                            class="fas fa-image"></i> Set BG</button>
+                    <button onclick="removeBG()" style="width: auto; background: var(--danger-color);"><i
+                            class="fas fa-times"></i> Remove</button>
+                </div>
+                <div id="previewBG" style="margin-top: 10px;"></div>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <h3 style="margin-bottom: 15px; color: white;"><i class="fas fa-users"></i> Orders</h3>
+            <div class="filter-section">
+                <button class="filter-btn active" onclick="filterUsers('all', this)">All</button>
+                <button class="filter-btn" onclick="filterUsers('paid', this)">Paid</button>
+                <button class="filter-btn" onclick="filterUsers('unpaid', this)">Unpaid</button>
+            </div>
+
+            <div id="usersList">
+                <!-- User items will vary here -->
+                <div style="text-align: center; padding: 20px; color: rgba(255,255,255,0.7);">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PIN = '1234';
+
+        function checkLogin() {
+            const input = document.getElementById('pinInput').value;
+            if (input === PIN) {
+                const overlay = document.getElementById('loginOverlay');
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    loadDashboard();
+                }, 300); // Wait for fade out
+            } else {
+                alert('Invalid PIN');
+                document.getElementById('pinInput').value = '';
+                document.getElementById('pinInput').focus();
+            }
+        }
+
+        // Allow Enter key to login
+        document.getElementById('pinInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') checkLogin();
+        });
+
+        function logout() {
+            location.reload();
+        }
+
+        async function loadDashboard() {
+            try {
+                // Load Settings
+                const res = await fetch('/api/settings');
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('upiIdInput').value = data.upiId || '';
+                    showQRPreview(data.qrImage);
+                    showBGPreview(data.bgImage);
+                }
+
+                // Load users
+                await filterUsers('all', document.querySelector('.filter-btn.active'));
+            } catch (err) {
+                console.error("Failed to load dashboard data", err);
+            }
+        }
+
+        async function saveUPI() {
+            const upiId = document.getElementById('upiIdInput').value;
+            try {
+                await fetch('/api/settings/upi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ upiId })
+                });
+                alert('UPI ID Updated Successfully!');
+            } catch (e) { alert('Error updating UPI ID'); }
+        }
+
+        async function uploadQR() {
+            const fileInput = document.getElementById('qrInput');
+            if (fileInput.files.length === 0) return alert('Select a file first');
+
+            const formData = new FormData();
+            formData.append('qrImage', fileInput.files[0]);
+
+            const res = await fetch('/api/settings/qr', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            showQRPreview(data.filePath);
+            alert('QR Image Uploaded');
+        }
+
+        async function removeQR() {
+            if (!confirm('Are you sure you want to revert to auto-generated QR?')) return;
+            await fetch('/api/settings/qr', { method: 'DELETE' });
+            showQRPreview('');
+            alert('Reverted to Auto-Generated QR');
+        }
+
+        async function uploadBG() {
+            const fileInput = document.getElementById('bgInput');
+            if (fileInput.files.length === 0) return alert('Select a file first');
+
+            const formData = new FormData();
+            formData.append('bgImage', fileInput.files[0]);
+
+            const res = await fetch('/api/settings/background', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            showBGPreview(data.filePath);
+            alert('Background Image Uploaded');
+        }
+
+        async function removeBG() {
+            if (!confirm('Remove custom background?')) return;
+            await fetch('/api/settings/background', { method: 'DELETE' });
+            showBGPreview('');
+            alert('Background Image Removed');
+        }
+
+        function showQRPreview(path) {
+            const container = document.getElementById('previewQR');
+            if (path) {
+                container.innerHTML = `<img src="${path}" style="max-width: 100px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> <p style="font-size:0.8rem; color: #2e7d32; margin-top:5px;"><i class="fas fa-check-circle"></i> Custom Active</p>`;
+            } else {
+                container.innerHTML = `<p style="font-size:0.8rem; color:#666;">Default (Auto-Generated)</p>`;
+            }
+        }
+
+        function showBGPreview(path) {
+            const container = document.getElementById('previewBG');
+            if (path) {
+                container.innerHTML = `<img src="${path}" style="max-width: 100px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"> <p style="font-size:0.8rem; color: #2e7d32; margin-top:5px;"><i class="fas fa-check-circle"></i> Background Active</p>`;
+            } else {
+                container.innerHTML = `<p style="font-size:0.8rem; color:#666;">Default Background</p>`;
+            }
+        }
+
+        async function filterUsers(status, btn) {
+            // Update UI
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            const list = document.getElementById('usersList');
+            // list.innerHTML = '<div style="text-align:center; color:white; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Loading data...</div>';
+
+            // Fetch Data
+            let url = '/api/users';
+            if (status !== 'all') url += `?status=${status}`;
+
+            try {
+                const res = await fetch(url);
+                const users = await res.json();
+
+                list.innerHTML = '';
+
+                if (users.length === 0) {
+                    list.innerHTML = '<div style="text-align:center; color:rgba(255,255,255,0.6); padding:20px;">No orders found.</div>';
+                    return;
+                }
+
+                users.forEach((user, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'user-item';
+                    item.style.animationDelay = `${index * 0.05}s`; // Stagger animation
+
+                    item.innerHTML = `
+                        <div class="user-info">
+                            <h4>${user.fullName}</h4>
+                            <p><i class="fas fa-phone-alt" style="font-size:0.7em;"></i> ${user.mobile}</p>
+                            <p><i class="fas fa-tshirt" style="font-size:0.7em;"></i> ${user.tshirtName} (${user.size})</p>
+                            <p style="color: var(--primary-color); font-weight:600; margin-top:5px;">₹${user.amount}</p>
+                        </div>
+                        <div class="payment-toggle ${user.paymentStatus ? 'status-paid' : 'status-unpaid'}"
+                             onclick="togglePayment('${user._id}', ${!user.paymentStatus})">
+                            ${user.paymentStatus ? '<i class="fas fa-check"></i> PAID' : '<i class="fas fa-clock"></i> PENDING'}
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            } catch (err) {
+                list.innerHTML = '<div style="text-align:center; color:#ff4757; padding:20px;">Error loading data. Is the server running?</div>';
+            }
+        }
+
+        async function togglePayment(id, newStatus) {
+            try {
+                await fetch(`/api/user/${id}/payment`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ paymentStatus: newStatus })
+                });
+                // Find and update specific item locally for smoothness, or reload list
+                // For simplicity and accuracy, reloading list but keeping same filter
+                const activeBtn = document.querySelector('.filter-btn.active');
+                if (activeBtn) {
+                    // small delay to allow DB update
+                    setTimeout(() => filterUsers(activeBtn.innerText.toLowerCase() === 'all' ? 'all' : activeBtn.innerText.toLowerCase(), activeBtn), 100);
+                }
+            } catch (e) {
+                alert('Failed to update status');
+            }
+        }
+    </script>
+</body>
+
+</html>
