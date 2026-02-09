@@ -61,6 +61,16 @@
                 </div>
                 <div id="previewBG" style="margin-top: 10px;"></div>
             </div>
+
+            <div style="border-top: 1px solid #ddd; margin-top: 20px; padding-top: 20px;">
+                <label>Global T-Shirt Price (Apply to All)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="globalPriceInput" placeholder="Enter Amount" style="max-width: 150px;">
+                    <button onclick="updateGlobalPrice()" style="width: auto; background: var(--primary-color);">
+                        <i class="fas fa-check-double"></i> Apply to All
+                    </button>
+                </div>
+            </div>
         </div>
 
         <div class="dashboard-section">
@@ -184,6 +194,31 @@
             alert('Background Image Removed');
         }
 
+        async function updateGlobalPrice() {
+            const amount = document.getElementById('globalPriceInput').value;
+            if (!amount) return alert('Please enter an amount');
+
+            if (!confirm(`Are you sure you want to set the price to ₹${amount} for ALL users?`)) return;
+
+            try {
+                const res = await fetch('/api/users/bulk-price', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount })
+                });
+                const data = await res.json();
+                alert(data.message);
+
+                // Refresh list
+                const activeBtn = document.querySelector('.filter-btn.active');
+                if (activeBtn) filterUsers(activeBtn.innerText.toLowerCase() === 'all' ? 'all' : activeBtn.innerText.toLowerCase(), activeBtn);
+
+                document.getElementById('globalPriceInput').value = '';
+            } catch (e) {
+                alert('Failed to update global price');
+            }
+        }
+
         function showQRPreview(path) {
             const container = document.getElementById('previewQR');
             if (path) {
@@ -235,10 +270,14 @@
                             <h4>${user.fullName}</h4>
                             <p><i class="fas fa-phone-alt" style="font-size:0.7em;"></i> ${user.mobile}</p>
                             <p><i class="fas fa-tshirt" style="font-size:0.7em;"></i> ${user.tshirtName} (${user.size})</p>
-                            <p style="color: var(--primary-color); font-weight:600; margin-top:5px;">₹${user.amount}</p>
+                            <div style="margin-top:5px; display:flex; align-items:center;">
+                                <span style="font-size:0.9rem; margin-right:5px;">₹</span>
+                                <input type="number" class="price-input" value="${user.amount}" 
+                                       onchange="updateUser('${user._id}', { amount: this.value })">
+                            </div>
                         </div>
                         <div class="payment-toggle ${user.paymentStatus ? 'status-paid' : 'status-unpaid'}"
-                             onclick="togglePayment('${user._id}', ${!user.paymentStatus})">
+                             onclick="updateUser('${user._id}', { paymentStatus: ${!user.paymentStatus} })">
                             ${user.paymentStatus ? '<i class="fas fa-check"></i> PAID' : '<i class="fas fa-clock"></i> PENDING'}
                         </div>
                     `;
@@ -249,22 +288,31 @@
             }
         }
 
-        async function togglePayment(id, newStatus) {
+        async function updateUser(id, updates) {
             try {
-                await fetch(`/api/user/${id}/payment`, {
+                // Determine API endpoint - now using generic PUT /api/user/:id
+                await fetch(`/api/user/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ paymentStatus: newStatus })
+                    body: JSON.stringify(updates)
                 });
-                // Find and update specific item locally for smoothness, or reload list
-                // For simplicity and accuracy, reloading list but keeping same filter
-                const activeBtn = document.querySelector('.filter-btn.active');
-                if (activeBtn) {
-                    // small delay to allow DB update
-                    setTimeout(() => filterUsers(activeBtn.innerText.toLowerCase() === 'all' ? 'all' : activeBtn.innerText.toLowerCase(), activeBtn), 100);
+
+                // Show feedback if amount updated
+                if (updates.amount) {
+                    // Ideally show a toast, for now just log or subtle flash
+                    // Could add a small 'Saved' text injection near input
+                }
+
+                // If payment status changed, refresh list to show correct styling immediately
+                if (updates.paymentStatus !== undefined) {
+                    const activeBtn = document.querySelector('.filter-btn.active');
+                    if (activeBtn) {
+                        setTimeout(() => filterUsers(activeBtn.innerText.toLowerCase() === 'all' ? 'all' : activeBtn.innerText.toLowerCase(), activeBtn), 100);
+                    }
                 }
             } catch (e) {
-                alert('Failed to update status');
+                alert('Failed to update user');
+                console.error(e);
             }
         }
     </script>

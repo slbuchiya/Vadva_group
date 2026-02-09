@@ -4,8 +4,10 @@
     --secondary-color: #00bf8f;
     --secondary-dark: #008f6b;
     --danger-color: #ff4757;
-    --bg-gradient: linear-gradient(135deg, #1e1e2f 0%, #2d2b42 100%); /* Darker, richer background */
-    --glass-bg: rgba(255, 255, 255, 0.1); /* More subtle glass */
+    --bg-gradient: linear-gradient(135deg, #1e1e2f 0%, #2d2b42 100%);
+    /* Darker, richer background */
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    /* More subtle glass */
     --card-bg: rgba(255, 255, 255, 0.95);
     --text-color: #f0f0f0;
     --text-dark: #333;
@@ -43,7 +45,8 @@ body {
     border: var(--border-light);
     text-align: center;
     position: relative;
-    overflow: hidden; /* For inner animations */
+    overflow: hidden;
+    /* For inner animations */
 }
 
 /* Header Styles */
@@ -52,7 +55,7 @@ header h1 {
     margin-bottom: 5px;
     font-weight: 600;
     letter-spacing: 1px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 header p {
@@ -86,15 +89,19 @@ input:focus {
 }
 
 /* Admin Specific Inputs (White Background Context) */
-.settings-card input, .login-box input {
+.settings-card input,
+.login-box input {
     background: #f4f6f8;
     color: #333;
     border: 1px solid #ddd;
 }
-.settings-card input:focus, .login-box input:focus {
+
+.settings-card input:focus,
+.login-box input:focus {
     background: white;
     color: #333;
 }
+
 .settings-card label {
     color: var(--text-dark);
     font-weight: 500;
@@ -118,7 +125,7 @@ button {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 button:hover {
@@ -139,7 +146,7 @@ button:active {
     border-radius: 15px;
     margin-top: 20px;
     text-align: left;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     animation: slideUp 0.5s ease-out;
 }
 
@@ -155,6 +162,7 @@ button:active {
     align-items: center;
     margin-bottom: 25px;
 }
+
 .admin-header h2 {
     color: white;
 }
@@ -165,6 +173,7 @@ button:active {
     padding: 8px 20px;
     font-size: 0.9rem;
 }
+
 .logout-btn:hover {
     background: #d32f2f;
     box-shadow: 0 4px 10px rgba(255, 71, 87, 0.3);
@@ -176,7 +185,7 @@ button:active {
     padding: 25px;
     border-radius: 15px;
     margin-bottom: 25px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
     animation: slideInLeft 0.5s ease-out;
 }
 
@@ -184,7 +193,7 @@ button:active {
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     padding: 5px;
     border-radius: 12px;
 }
@@ -200,7 +209,7 @@ button:active {
 .filter-btn.active {
     background: white;
     color: var(--primary-color);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .user-item {
@@ -231,6 +240,30 @@ button:active {
     color: #666;
 }
 
+/* Editable Price Input */
+.price-input {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--primary-color);
+    font-weight: 600;
+    width: 80px;
+    padding: 5px;
+    border-radius: 5px;
+    transition: all 0.2s;
+    font-size: 1rem;
+}
+
+.price-input:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary-color);
+    outline: none;
+    color: var(--text-dark);
+}
+
+.price-input:hover {
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
 /* Payment Status Badge */
 .payment-toggle {
     cursor: pointer;
@@ -248,6 +281,7 @@ button:active {
     color: #2e7d32;
     border: 1px solid #c8e6c9;
 }
+
 .status-paid:hover {
     background: #c8e6c9;
 }
@@ -257,6 +291,7 @@ button:active {
     color: #c62828;
     border: 1px solid #ffcdd2;
 }
+
 .status-unpaid:hover {
     background: #ffcdd2;
 }
@@ -268,7 +303,8 @@ button:active {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.85); /* Darker overlay */
+    background: rgba(0, 0, 0, 0.85);
+    /* Darker overlay */
     backdrop-filter: blur(5px);
     display: flex;
     justify-content: center;
@@ -284,30 +320,56 @@ button:active {
     text-align: center;
     width: 90%;
     max-width: 400px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
     color: var(--text-dark);
     animation: scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* Utility Animations */
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes slideInLeft {
-    from { opacity: 0; transform: translateX(-20px); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 @keyframes scaleUp {
-    from { transform: scale(0.8); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .hidden {
