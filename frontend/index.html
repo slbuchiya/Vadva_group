@@ -9,9 +9,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+
     <style>
-        /* Styles kept same as before */
+        /* Base Styles */
         body {
             background-color: #1e1e2f;
         }
@@ -49,7 +53,11 @@
             animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Receipt Modal Styles */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Receipt Modal */
         .receipt-modal {
             position: fixed;
             top: 0;
@@ -62,11 +70,6 @@
             justify-content: center;
             align-items: center;
             backdrop-filter: blur(5px);
-        }
-
-        /* IMPORTANT: This ensures the modal stays hidden by default */
-        .hidden {
-            display: none !important;
         }
 
         .receipt-box {
@@ -127,6 +130,7 @@
             color: #888;
         }
 
+        /* Action Buttons */
         .view-receipt-btn {
             background: #2e7d32;
             color: white;
@@ -142,6 +146,14 @@
             justify-content: center;
             gap: 10px;
             text-decoration: none;
+        }
+
+        .scan-upload-box {
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
         }
     </style>
 </head>
@@ -189,8 +201,7 @@
                         <i class="fas fa-external-link-alt"></i> Open UPI App
                     </a>
 
-                    <div id="markPaidContainer"
-                        style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                    <div style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
                         <button id="markPaidBtn" onclick="handlePaymentAndPrint()"
                             style="background: #e53935; width: 100%; padding: 12px; border-radius: 8px; font-weight: 600; color: white; border: none; cursor: pointer;">
                             <i class="fas fa-check-circle"></i> Confirm Payment Received
@@ -246,7 +257,7 @@
         let TOTAL_AMOUNT = 0;
         let ORDER_DETAILS_TEXT = '';
 
-        // Fetch settings on load
+        // Fetch Settings
         fetch(`${BACKEND_URL}/api/settings`)
             .then(res => res.json())
             .then(data => {
@@ -263,7 +274,6 @@
             const actionButtons = document.getElementById('actionButtons');
             const qrSection = document.getElementById('qrSection');
 
-            // Reset UI
             resultSection.classList.add('hidden');
             document.getElementById('errorMsg').classList.add('hidden');
             qrSection.classList.add('hidden');
@@ -318,8 +328,7 @@
                 document.getElementById('totalAmount').textContent = `₹${TOTAL_AMOUNT}`;
 
                 if (allPaid) {
-                    // If everything is paid, show Receipt button
-                    // NOTE: This onclick will trigger the modal ONLY when clicked
+                    // ALL PAID: Show Receipt Button
                     actionButtons.innerHTML = `
                         <button onclick='showReceipt(${JSON.stringify(paidUsersForReceipt)}, ${paidAmount})' class="view-receipt-btn">
                             <i class="fas fa-file-invoice"></i> View & Download Receipt
@@ -327,11 +336,21 @@
                         <p style="text-align:center; color:#81c784; margin-top:10px;"><i class="fas fa-check-circle"></i> Payment Completed</p>
                     `;
                 } else {
-                    // If pending, show Pay button
+                    // PENDING: Show Pay Button AND Screenshot Upload
                     actionButtons.innerHTML = `
                         <button id="payBtn" onclick="generateQR()">
-                            <i class="fas fa-qrcode"></i> Pay Now via UPI
+                            <i class="fas fa-qrcode"></i> Show QR Code & Pay
                         </button>
+                        
+                        <div class="scan-upload-box">
+                            <p style="font-size: 0.9rem; margin-bottom: 10px; color: #ffb74d; text-align: left;">
+                                <i class="fas fa-camera"></i> <strong>Auto-Verify Payment:</strong><br>
+                                Already paid via GPay/PhonePe? Upload screenshot here:
+                            </p>
+                            <input type="file" id="screenshotInput" accept="image/*" onchange="verifyScreenshot(this)" 
+                                style="width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 5px; color: white; font-size: 0.9rem;">
+                            <p id="ocrStatus" style="font-size: 0.85rem; color: #aaa; margin-top: 8px; font-style: italic; text-align: left;"></p>
+                        </div>
                     `;
                 }
 
@@ -346,7 +365,7 @@
 
         function generateQR() {
             const note = `Payment for ${ORDER_DETAILS_TEXT}`.substring(0, 50);
-            const upiUrl = `upi://pay?pa=${UPI_ID}&pn=buchiya_sachinkumar_lakhamshibhai&am=${TOTAL_AMOUNT}&cu=INR&tn=${encodeURIComponent(note)}`;
+            const upiUrl = `upi://pay?pa=${UPI_ID}&pn=Vadva_Group&am=${TOTAL_AMOUNT}&cu=INR&tn=${encodeURIComponent(note)}`;
 
             const qrSection = document.getElementById('qrSection');
             qrSection.classList.remove('hidden');
@@ -364,23 +383,65 @@
             document.getElementById('upiIdDisplay').textContent = UPI_ID;
         }
 
-        async function handlePaymentAndPrint() {
-            if (!confirm(`Confirm that you have received ₹${TOTAL_AMOUNT}?`)) return;
+        // --- Screenshot Verification Logic ---
+        async function verifyScreenshot(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const status = document.getElementById('ocrStatus');
+            status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning screenshot... (10-15 sec)';
+            status.style.color = "#ffb74d";
+
+            try {
+                // Tesseract OCR Worker
+                const worker = await Tesseract.createWorker('eng');
+                const ret = await worker.recognize(file);
+                const text = ret.data.text.toLowerCase();
+                await worker.terminate();
+
+                console.log("Scanned:", text);
+
+                // Keywords to check
+                const isSuccess = text.includes('success') || text.includes('paid') || text.includes('completed') || text.includes('done');
+                const amountStr = TOTAL_AMOUNT.toString();
+                const amountFound = text.includes(amountStr);
+
+                if (isSuccess && amountFound) {
+                    status.innerHTML = '<i class="fas fa-check-circle"></i> Verified! Updating payment...';
+                    status.style.color = "#4caf50";
+
+                    // Auto-Update Payment (Skip confirmation dialog)
+                    await handlePaymentAndPrint(true);
+                } else {
+                    status.innerHTML = '<i class="fas fa-times-circle"></i> Could not verify. Please ensure amount matches.';
+                    status.style.color = "#e53935";
+                }
+            } catch (e) {
+                console.error(e);
+                status.innerText = "Error scanning image. Try manual confirm.";
+                status.style.color = "#e53935";
+            }
+        }
+
+        async function handlePaymentAndPrint(autoVerify = false) {
+            // If manual click, ask for confirmation. If autoVerify, skip confirmation.
+            if (!autoVerify) {
+                if (!confirm(`Confirm that you have received ₹${TOTAL_AMOUNT}?`)) return;
+            }
 
             const btn = document.getElementById('markPaidBtn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            btn.disabled = true;
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                btn.disabled = true;
+            }
 
             const mobile = document.getElementById('mobileInput').value;
 
             try {
-                // 1. Get unpaid users
                 const res = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
                 const users = await res.json();
                 const unpaid = users.filter(u => !u.paymentStatus);
 
-                // 2. Mark them as paid
                 await Promise.all(unpaid.map(u =>
                     fetch(`${BACKEND_URL}/api/user/${u._id}/payment`, {
                         method: 'PUT',
@@ -389,11 +450,11 @@
                     })
                 ));
 
-                // 3. Refresh UI to show "Paid" state (This will hide QR and show Receipt Button)
-                await searchUser();
+                await searchUser(); // Refresh UI
 
-                // IMPORTANT: Removed showReceipt() call here to stop auto pop-up.
-                // The user can now click the "View & Download Receipt" button manually.
+                if (autoVerify) {
+                    alert("Payment Verified & Updated Successfully! Receipt is ready.");
+                }
 
             } catch (e) {
                 alert('Error updating payment.');
@@ -401,8 +462,7 @@
         }
 
         function showReceipt(users, totalAmount) {
-            const date = new Date().toLocaleDateString('en-IN');
-            document.getElementById('receiptDate').innerText = date;
+            document.getElementById('receiptDate').innerText = new Date().toLocaleDateString('en-IN');
             document.getElementById('receiptNames').innerHTML = users.map(u => `<div>${u.fullName} (${u.tshirtName})</div>`).join('');
             document.getElementById('receiptAmount').innerText = `₹${totalAmount}`;
             document.getElementById('receiptModal').classList.remove('hidden');
