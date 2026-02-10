@@ -14,12 +14,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
-        /* Main Page Styles */
         body {
             background-color: #1a1a2e;
             border-top: 5px solid #ff9f43;
             font-family: 'Poppins', sans-serif;
-            overflow-x: hidden;
         }
 
         .hero-section h1 {
@@ -98,23 +96,22 @@
             font-weight: bold;
         }
 
-        /* --- PDF RECEIPT HIDDEN CONTAINER --- */
+        /* PDF RECEIPT (Hidden off-screen) */
         #receipt-container {
-            position: absolute;
-            top: 0;
-            left: -9999px;
-            /* Moves it off-screen so user can't see it */
-            z-index: -1;
+            position: fixed;
+            top: -10000px;
+            /* Hide completely */
+            left: 0;
+            z-index: -100;
         }
 
         #receipt-template {
-            width: 580px;
-            /* Fixed width for PDF A5 size */
-            background: #ffffff;
+            width: 600px;
+            background: #fff;
             padding: 40px;
-            color: #000000;
+            color: #000;
             font-family: 'Noto Sans Gujarati', sans-serif;
-            border: 2px solid #333;
+            border: 2px solid #000;
         }
 
         .rec-header {
@@ -124,31 +121,11 @@
             margin-bottom: 25px;
         }
 
-        .rec-top-title {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #555;
-        }
-
         .rec-main-title {
             font-size: 24px;
             font-weight: bold;
             color: #d32f2f;
             margin: 5px 0;
-        }
-
-        .rec-sub-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-top: 5px;
-            color: #333;
-        }
-
-        .rec-content {
-            margin-top: 20px;
-            font-size: 18px;
-            line-height: 2;
         }
 
         .rec-row {
@@ -157,16 +134,7 @@
             border-bottom: 1px dashed #ccc;
             padding-bottom: 5px;
             margin-bottom: 10px;
-        }
-
-        .rec-label {
-            font-weight: bold;
-            color: #444;
-        }
-
-        .rec-value {
-            font-weight: bold;
-            color: #000;
+            font-size: 18px;
         }
 
         .rec-total-box {
@@ -186,25 +154,10 @@
             align-items: flex-end;
         }
 
-        .rec-sign-area {
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
         .signature-img {
             height: 70px;
-            width: auto;
             display: block;
             margin-bottom: 5px;
-        }
-
-        .sign-label {
-            border-top: 1px solid #000;
-            padding-top: 5px;
-            font-size: 14px;
-            width: 180px;
         }
     </style>
 </head>
@@ -224,9 +177,7 @@
                 <i class="fas fa-search"></i>
                 <input type="tel" id="mobileInput" placeholder="Enter Mobile Number" maxlength="10">
             </div>
-            <button onclick="searchUser()" class="search-btn">
-                <i class="fas fa-search"></i> Find User
-            </button>
+            <button onclick="searchUser()" class="search-btn">Find User</button>
         </div>
 
         <div id="resultSection" class="hidden">
@@ -237,46 +188,25 @@
             <i class="fas fa-exclamation-circle"></i> User not found!
         </div>
 
-        <div
-            style="margin-top: 40px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-            <a href="index.html" style="color: #666; text-decoration: none; font-size: 0.9rem; margin-right: 20px;">
-                <i class="fas fa-home"></i> User Home
-            </a>
-            <a href="admin.html" style="color: #666; text-decoration: none; font-size: 0.9rem;">
-                <i class="fas fa-lock"></i> Admin Panel
-            </a>
+        <div style="margin-top: 40px; text-align: center;">
+            <a href="index.html" style="color: #666; text-decoration: none;">Go to Home</a>
         </div>
     </div>
 
     <div id="receipt-container">
         <div id="receipt-template">
             <div class="rec-header">
-                <div class="rec-top-title">|| જય ગોવિંદસુરા દાદા ||</div>
+                <div style="font-size: 16px; font-weight: bold;">|| જય ગોવિંદસુરા દાદા ||</div>
                 <div class="rec-main-title">વડવા કન્યા ટી-શર્ટ માટે રકમ ઉઘરાણી</div>
-                <div class="rec-sub-title">(વડવા કન્યા ગોવિંદસુરા ગ્રુપ)</div>
+                <div style="font-size: 18px; font-weight: bold;">(વડવા કન્યા ગોવિંદસુરા ગ્રુપ)</div>
             </div>
 
-            <div class="rec-content">
-                <div class="rec-row">
-                    <span class="rec-label">નામ (Name):</span>
-                    <span class="rec-value" id="rec-name">--</span>
-                </div>
-                <div class="rec-row">
-                    <span class="rec-label">મોબાઈલ (Mobile):</span>
-                    <span class="rec-value" id="rec-mobile">--</span>
-                </div>
-                <div class="rec-row">
-                    <span class="rec-label">ટી-શર્ટ સાઈઝ (Size):</span>
-                    <span class="rec-value" id="rec-size">--</span>
-                </div>
-                <div class="rec-row">
-                    <span class="rec-label">તારીખ (Date):</span>
-                    <span class="rec-value" id="rec-date">--</span>
-                </div>
-                <div class="rec-row">
-                    <span class="rec-label">પેમેન્ટ મોડ (Mode):</span>
-                    <span class="rec-value" id="rec-mode">--</span>
-                </div>
+            <div style="margin-top: 20px; line-height: 2;">
+                <div class="rec-row"><span>નામ (Name):</span><strong id="rec-name">--</strong></div>
+                <div class="rec-row"><span>મોબાઈલ (Mobile):</span><strong id="rec-mobile">--</strong></div>
+                <div class="rec-row"><span>ટી-શર્ટ સાઈઝ (Size):</span><strong id="rec-size">--</strong></div>
+                <div class="rec-row"><span>તારીખ (Date):</span><strong id="rec-date">--</strong></div>
+                <div class="rec-row"><span>પેમેન્ટ મોડ (Mode):</span><strong id="rec-mode">--</strong></div>
             </div>
 
             <div class="rec-total-box">
@@ -284,12 +214,12 @@
             </div>
 
             <div class="rec-footer">
-                <div style="font-size: 14px; max-width: 250px;">
+                <div style="font-size: 14px; max-width: 300px;">
                     આપના તરફથી ટી-શર્ટ માટે રકમ મળેલ છે, જેનો સાભાર સ્વીકારવામાં આવેલ છે.
                 </div>
-                <div class="rec-sign-area">
-                    <img src="sign.jpeg" class="signature-img" alt="Signature">
-                    <div class="sign-label">નાણાં વસુલ કરનારની સહી</div>
+                <div style="text-align: center;">
+                    <img src="sign.jpeg" class="signature-img" alt="Sign">
+                    <div style="border-top: 1px solid #000; padding-top: 5px;">નાણાં વસુલ કરનારની સહી</div>
                 </div>
             </div>
         </div>
@@ -298,18 +228,19 @@
     <script>
         const BACKEND_URL = 'https://vadva-group-backend-1.onrender.com';
         let TSHIRT_PRICE = 0;
+        let CURRENT_USERS = []; // Store users here to prevent HTML errors
 
+        // Load Settings
         fetch(`${BACKEND_URL}/api/settings`)
             .then(res => res.json())
-            .then(data => {
-                if (data.tshirtPrice) TSHIRT_PRICE = parseInt(data.tshirtPrice) || 0;
-            });
+            .then(data => { if (data.tshirtPrice) TSHIRT_PRICE = parseInt(data.tshirtPrice) || 0; });
 
         async function searchUser() {
             const mobile = document.getElementById('mobileInput').value;
             const resultSection = document.getElementById('resultSection');
             const ordersContainer = document.getElementById('ordersContainer');
             const errorMsg = document.getElementById('errorMsg');
+            const btn = document.querySelector('.search-btn');
 
             resultSection.classList.add('hidden');
             errorMsg.classList.add('hidden');
@@ -317,9 +248,9 @@
 
             if (!mobile || mobile.length < 10) return alert('Enter valid number');
 
-            const btn = document.querySelector('.search-btn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+            btn.innerHTML = 'Searching...';
+            btn.disabled = true;
 
             try {
                 const res = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
@@ -327,53 +258,43 @@
                 const users = await res.json();
                 if (users.length === 0) throw new Error();
 
+                CURRENT_USERS = users; // Store in global variable
+
                 users.forEach((user, i) => {
                     const price = TSHIRT_PRICE > 0 ? TSHIRT_PRICE : user.amount;
-                    let actionButtons = '';
-                    let statusBadge = '';
-                    const userString = encodeURIComponent(JSON.stringify(user));
+                    let content = '';
 
                     if (user.paymentStatus) {
-                        statusBadge = `<span class="status-paid"><i class="fas fa-check-circle"></i> PAID</span>`;
-                        actionButtons = `
-                            <div style="margin-top:15px; text-align:center;">
-                                <p style="color:#aaa; font-size:0.9rem; margin-bottom:5px;">Payment Received ✅</p>
-                                <button onclick="generateReceiptPDF('${userString}', 'Reprint')" style="background:#3498db; color:white; padding:8px 15px; border:none; border-radius:5px; margin-bottom:10px; cursor:pointer;">
-                                    <i class="fas fa-print"></i> Re-download Receipt
+                        content = `
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <h2 style="margin:0; color:#fff;">${user.fullName}</h2>
+                                <span class="status-paid">PAID</span>
+                            </div>
+                            <div class="detail-row" style="margin-top:10px; color:#ccc;">Size: ${user.size} | Amt: ₹${price}</div>
+                            <div style="margin-top:15px; display:flex; gap:10px;">
+                                <button onclick="printReceipt(${i}, 'Reprint')" style="flex:1; background:#3498db; color:white; padding:10px; border:none; border-radius:5px; cursor:pointer;">
+                                    <i class="fas fa-print"></i> Receipt
                                 </button>
-                                <br>
-                                <button onclick="markUnpaid('${user._id}')" class="btn-unpaid">
-                                    <i class="fas fa-undo"></i> Mistake? Mark as UNPAID
+                                <button onclick="markUnpaid('${user._id}')" style="background:#c0392b; color:white; padding:10px; border:none; border-radius:5px; cursor:pointer;">
+                                    <i class="fas fa-undo"></i> Undo
                                 </button>
                             </div>
                         `;
                     } else {
-                        statusBadge = `<span class="status-pending"><i class="fas fa-clock"></i> PENDING</span>`;
-                        actionButtons = `
-                            <p style="margin-top:15px; font-size:0.9rem; color:#ccc;">Select Payment Method:</p>
+                        content = `
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <h2 style="margin:0; color:#fff;">${user.fullName}</h2>
+                                <span class="status-pending">PENDING</span>
+                            </div>
+                            <div class="detail-row" style="margin-top:10px; color:#ccc;">Size: ${user.size} | Amt: ₹${price}</div>
                             <div class="btn-group">
-                                <button onclick="markPaid('${user._id}', 'Cash', '${userString}')" class="btn-cash">
-                                    <i class="fas fa-money-bill-wave"></i> Cash
-                                </button>
-                                <button onclick="markPaid('${user._id}', 'Online', '${userString}')" class="btn-upi">
-                                    <i class="fas fa-qrcode"></i> Online
-                                </button>
+                                <button onclick="markPaid('${user._id}', 'Cash', ${i})" class="btn-cash">Cash</button>
+                                <button onclick="markPaid('${user._id}', 'Online', ${i})" class="btn-upi">Online</button>
                             </div>
                         `;
                     }
 
-                    ordersContainer.innerHTML += `
-                        <div class="card">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                                <h2 style="margin:0; font-size:1.3rem; color:#fff;">${user.fullName}</h2>
-                                ${statusBadge}
-                            </div>
-                            <div class="detail-row" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:5px;">
-                                <span><i class="fas fa-tshirt"></i> Size: <strong>${user.size}</strong></span>
-                                <span><i class="fas fa-rupee-sign"></i> Amount: <strong style="color:#ff9f43; font-size:1.1rem;">₹${price}</strong></span>
-                            </div>
-                            ${actionButtons}
-                        </div>`;
+                    ordersContainer.innerHTML += `<div class="card">${content}</div>`;
                 });
 
                 resultSection.classList.remove('hidden');
@@ -381,9 +302,63 @@
                 errorMsg.classList.remove('hidden');
             } finally {
                 btn.innerHTML = originalText;
+                btn.disabled = false;
             }
         }
 
-        async function markPaid(userId, mode, userString) {
-            const user = JSON.parse(decodeURIComponent(userString));
+        async function markPaid(id, mode, index) {
+            if (!confirm(`Confirm payment via ${mode}?`)) return;
+
+            try {
+                await fetch(`${BACKEND_URL}/api/user/${id}/payment`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ paymentStatus: true })
+                });
+
+                printReceipt(index, mode); // Generate PDF
+                searchUser(); // Refresh Page
+                alert("Paid Successfully! Downloading Receipt...");
+            } catch (e) { alert('Error'); }
+        }
+
+        async function markUnpaid(id) {
+            if (!confirm('Mark as Unpaid?')) return;
+            await fetch(`${BACKEND_URL}/api/user/${id}/payment`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paymentStatus: false })
+            });
+            searchUser();
+        }
+
+        function printReceipt(index, mode) {
+            const user = CURRENT_USERS[index];
             const amount = TSHIRT_PRICE > 0 ? TSHIRT_PRICE : user.amount;
+            const date = new Date().toLocaleDateString('en-IN');
+
+            document.getElementById('rec-date').innerText = date;
+            document.getElementById('rec-name').innerText = user.fullName;
+            document.getElementById('rec-mobile').innerText = user.mobileNumber;
+            document.getElementById('rec-size').innerText = user.size;
+            document.getElementById('rec-mode').innerText = mode;
+            document.getElementById('rec-amount').innerText = amount;
+
+            const element = document.getElementById('receipt-template');
+            const opt = {
+                margin: 0,
+                filename: `Receipt_${user.fullName}.pdf`,
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' }
+            };
+
+            // Wait 500ms to ensure hidden element renders
+            setTimeout(() => {
+                html2pdf().set(opt).from(element).save();
+            }, 500);
+        }
+    </script>
+</body>
+
+</html>
