@@ -13,7 +13,7 @@
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 
     <style>
-        /* Base Styles - Same as before */
+        /* Base Styles */
         body {
             background-color: #1e1e2f;
         }
@@ -263,16 +263,12 @@
         let TOTAL_AMOUNT = 0;
         let ADMIN_UPI_ID = '';
 
-        // Fetch Settings
         fetch(`${BACKEND_URL}/api/settings`)
             .then(res => res.json())
             .then(data => {
                 if (data.tshirtPrice) TSHIRT_PRICE = parseInt(data.tshirtPrice) || 0;
                 if (data.upiId) ADMIN_UPI_ID = data.upiId;
-
-                if (data.qrImage) {
-                    CUSTOM_QR = data.qrImage.startsWith('http') ? data.qrImage : `${BACKEND_URL}${data.qrImage}`;
-                }
+                if (data.qrImage) CUSTOM_QR = data.qrImage.startsWith('http') ? data.qrImage : `${BACKEND_URL}${data.qrImage}`;
                 if (data.bgImage) {
                     const bgUrl = data.bgImage.startsWith('http') ? data.bgImage : `${BACKEND_URL}${data.bgImage}`;
                     document.body.style.backgroundImage = `url('${bgUrl}')`;
@@ -377,96 +373,107 @@
             }
         }
 
-        // --- NEW HELPER: Pre-process Image for Dark Mode ---
+        // --- OPTIMIZED IMAGE PRE-PROCESSING (RESIZE + DARK MODE) ---
         function preprocessImage(file) {
             return new Promise((resolve) => {
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
 
+                    // 1. RESIZE LOGIC (Max Width 1500px to fix memory issues)
+                    const MAX_WIDTH = 1500;
+                    const scaleSize = MAX_WIDTH / img.width;
+                    if (scaleSize < 1) {
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                    } else {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                    }
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    // 2. DARK MODE LOGIC (Invert colors if dark)
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                     const data = imageData.data;
 
-                    // Simple logic: Invert Dark Mode to Light Mode
-                    // If image looks dark (average brightness low), invert colors
-                    let r, g, b, avg;
                     let totalBrightness = 0;
-
-                    for (let i = 0; i < data.length; i += 4) {
-                        r = data[i]; g = data[i + 1]; b = data[i + 2];
+                    // Sampling every 4th pixel for speed
+                    for (let i = 0; i < data.length; i += 16) {
+                        const r = data[i], g = data[i + 1], b = data[i + 2];
                         totalBrightness += (r + g + b) / 3;
                     }
-                    const overallAvg = totalBrightness / (data.length / 4);
+                    const overallAvg = totalBrightness / (data.length / 16);
 
-                    // If Dark Mode detected (avg < 100), invert text to Black on White
+                    // If avg brightness < 100, assuming Dark Mode -> Invert
                     if (overallAvg < 100) {
                         for (let i = 0; i < data.length; i += 4) {
-                            data[i] = 255 - data[i];
-                            data[i + 1] = 255 - data[i + 1];
-                            data[i + 2] = 255 - data[i + 2];
+                            data[i] = 255 - data[i];     // Red
+                            data[i + 1] = 255 - data[i + 1]; // Green
+                            data[i + 2] = 255 - data[i + 2]; // Blue
                         }
                         ctx.putImageData(imageData, 0, 0);
                     }
 
-                    resolve(canvas.toDataURL('image/png'));
+                    // Export as JPEG (lighter than PNG)
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
                 };
                 img.src = URL.createObjectURL(file);
             });
         }
 
-        // --- FINAL VERIFICATION LOGIC ---
         async function verifyScreenshot(input) {
             const file = input.files[0];
             if (!file) return;
 
             const status = document.getElementById('ocrStatus');
-            status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing screenshot...';
+            status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing image (Resizing & Scanning)...';
             status.style.color = "#ffb74d";
 
             try {
-                // 1. Process Image (Fix Dark Mode)
+                // Step 1: Pre-process (Resize + Dark Mode Fix)
                 const processedImgSrc = await preprocessImage(file);
 
+                // Step 2: OCR Scan
                 const worker = await Tesseract.createWorker('eng');
                 const ret = await worker.recognize(processedImgSrc);
                 const rawText = ret.data.text.toLowerCase();
-                // Remove spaces to verify ID properly
-                const cleanText = rawText.replace(/\s+/g, '');
+                const cleanText = rawText.replace(/\s+/g, ''); // Text without spaces
 
                 await worker.terminate();
 
                 console.log("Scanned:", rawText);
 
-                // 1. Status Check
-                const keywords = ['success', 'paid', 'completed', 'done', 'sent', 'transaction'];
+                // Step 3: Verification Checks
+                const keywords = ['success', 'paid', 'completed', 'done', 'sent', 'transaction', 'payment'];
                 const isSuccess = keywords.some(word => rawText.includes(word));
 
-                // 3. Receiver UPI ID Check (Handle Only)
+                // Amount Check (Robust)
+                const amountStr = TOTAL_AMOUNT.toString();
+                const textWithoutCommas = rawText.replace(/,/g, '');
+                const amountFound = textWithoutCommas.includes(amountStr) || textWithoutCommas.includes(amountStr + ".00");
+
+                // UPI Check
                 let upiFound = false;
                 let expectedHandle = "";
-
                 if (ADMIN_UPI_ID) {
                     expectedHandle = ADMIN_UPI_ID.toLowerCase().split('@')[0].trim();
-                    // Check in raw text OR clean text (for spaced out letters)
                     upiFound = rawText.includes(expectedHandle) || cleanText.includes(expectedHandle);
                 } else {
-                    upiFound = true; // Bypass
+                    upiFound = true;
                 }
 
-                // --- DECISION ---
+                // Final Decision
                 if (isSuccess && amountFound && upiFound) {
                     status.innerHTML = '<i class="fas fa-check-circle"></i> Verified! Updating Database...';
                     status.style.color = "#4caf50";
                     await updateDatabaseAsPaid();
                 } else {
                     let failReason = "";
-                    if (!isSuccess) failReason += "<li>Status 'Completed/Paid' not found.</li>";
-                    if (!amountFound) failReason += `<li>Amount ${TOTAL_AMOUNT} not found.</li>`;
-                    if (!upiFound) failReason += `<li>Receiver ID '${expectedHandle}' not found.</li>`;
+                    if (!isSuccess) failReason += "<li>Status 'Success/Paid' missing.</li>";
+                    if (!amountFound) failReason += `<li>Amount ${TOTAL_AMOUNT} missing.</li>`;
+                    if (!upiFound) failReason += `<li>Receiver ID '${expectedHandle}' missing.</li>`;
 
                     status.innerHTML = `<ul style="text-align:left; color:#e53935; font-size:0.8rem; padding-left:15px;">
                                             <strong>Verification Failed:</strong>
@@ -476,7 +483,7 @@
 
             } catch (e) {
                 console.error(e);
-                status.innerText = "Error scanning image.";
+                status.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error scanning image. Try again.`;
                 status.style.color = "#e53935";
             }
         }
