@@ -116,7 +116,10 @@
     </div>
 
     <script>
-        let UPI_ID = 'mobile@upi';
+        // Render Backend URL (તમારી સાચી લિંક)
+        const BACKEND_URL = 'https://vadva-group-backend-1.onrender.com';
+
+        let UPI_ID = 'buchiyasachin8@okicici';
         let CUSTOM_QR = '';
         let TOTAL_AMOUNT = 0;
         let ORDER_DETAILS_TEXT = '';
@@ -125,25 +128,29 @@
         refreshSettings();
 
         function refreshSettings() {
-            fetch('/api/settings')
+            // સુધારો 1: અહી Render ની લિંક વાપરી છે
+            fetch(`${BACKEND_URL}/api/settings`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.upiId) UPI_ID = data.upiId;
-                    if (data.qrImage) CUSTOM_QR = data.qrImage;
 
-                    // FXIED: Only override background if a custom image exists
-                    // Otherwise, let CSS gradient handle it.
+                    // સુધારો 2: જો QR ઈમેજ હોય તો તેની આગળ પણ URL લગાવવી પડે
+                    if (data.qrImage) {
+                        CUSTOM_QR = data.qrImage.startsWith('http') ? data.qrImage : `${BACKEND_URL}${data.qrImage}`;
+                    }
+
                     if (data.bgImage && data.bgImage.trim() !== '') {
-                        document.body.style.backgroundImage = `url('${data.bgImage}')`;
+                        // સુધારો 3: બેકગ્રાઉન્ડ ઈમેજ માટે પણ URL ઉમેરી
+                        const bgUrl = data.bgImage.startsWith('http') ? data.bgImage : `${BACKEND_URL}${data.bgImage}`;
+                        document.body.style.backgroundImage = `url('${bgUrl}')`;
                         document.body.style.backgroundSize = 'cover';
                         document.body.style.backgroundPosition = 'center';
                         document.body.style.backgroundAttachment = 'fixed';
                     } else {
-                        // Clear inline style to let CSS take over
                         document.body.style.backgroundImage = '';
                     }
                 })
-                .catch(err => console.log('Using default settings'));
+                .catch(err => console.log('Using default settings', err));
         }
 
         async function searchUser() {
@@ -167,16 +174,14 @@
                 return;
             }
 
-            // Button Loading State
             const btn = document.querySelector('button[onclick="searchUser()"]');
             const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
             btn.disabled = true;
 
             try {
-                // Determine API URL (handle dev proxy vs production)
-                // Since this runs on same port in our setup, relative path is fine.
-                const response = await fetch(`/api/user/${mobile}`);
+                // સુધારો 4: API સર્ચ માટે Render URL
+                const response = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
 
                 if (!response.ok) throw new Error('User not found');
 
@@ -190,7 +195,6 @@
 
                     const card = document.createElement('div');
                     card.className = 'card';
-                    // Animation delay for cards
                     card.style.animationDelay = `${index * 0.1}s`;
 
                     card.innerHTML = `
@@ -232,7 +236,6 @@
             const qrSection = document.getElementById('qrSection');
             qrSection.classList.remove('hidden');
 
-            // Scroll to QR
             qrSection.scrollIntoView({ behavior: 'smooth' });
 
             const qrContainer = document.getElementById('qrcode');
@@ -240,7 +243,7 @@
 
             if (CUSTOM_QR) {
                 const img = document.createElement('img');
-                img.src = CUSTOM_QR;
+                img.src = CUSTOM_QR; // Already handled URL above
                 img.style.width = '100%';
                 img.style.maxWidth = '200px';
                 img.style.borderRadius = '10px';
