@@ -4,14 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accountant Panel | Vadva Group</title>
+    <title>Accountant Desk | Vadva Group</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
-        /* Accountant Specific Styles */
+        /* Special Style for Accountant Page */
         body {
             background-color: #1a1a2e;
             border-top: 5px solid #ff9f43;
@@ -23,12 +23,10 @@
             margin-bottom: 5px;
         }
 
-        .hero-section p {
-            color: #aaa;
-        }
-
         .card {
             border-left: 5px solid #ff9f43;
+            margin-bottom: 20px;
+            animation: slideUp 0.4s ease;
         }
 
         .btn-group {
@@ -42,11 +40,15 @@
             background: #27ae60;
             /* Green */
             color: white;
-            padding: 10px;
+            padding: 12px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .btn-upi {
@@ -54,11 +56,15 @@
             background: #2980b9;
             /* Blue */
             color: white;
-            padding: 10px;
+            padding: 12px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .btn-unpaid {
@@ -66,30 +72,36 @@
             background: #c0392b;
             /* Red */
             color: white;
-            padding: 8px;
+            padding: 10px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
             margin-top: 10px;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
         }
 
         .status-paid {
             color: #27ae60;
             font-weight: bold;
-            border: 1px solid #27ae60;
-            padding: 5px 10px;
-            border-radius: 20px;
             background: rgba(39, 174, 96, 0.1);
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 1px solid #27ae60;
         }
 
         .status-pending {
-            color: #e67e22;
+            color: #ff9f43;
             font-weight: bold;
-            border: 1px solid #e67e22;
-            padding: 5px 10px;
+            background: rgba(255, 159, 67, 0.1);
+            padding: 5px 12px;
             border-radius: 20px;
-            background: rgba(230, 126, 34, 0.1);
+            border: 1px solid #ff9f43;
+        }
+
+        .search-btn {
+            background: #ff9f43;
+            color: #333;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -97,11 +109,11 @@
 <body>
     <div class="container">
         <header class="hero-section">
-            <div style="font-size: 2.5rem; color: #ff9f43; margin-bottom: 10px;">
-                <i class="fas fa-user-shield"></i>
+            <div style="font-size: 3rem; color: #ff9f43; margin-bottom: 10px;">
+                <i class="fas fa-cash-register"></i>
             </div>
-            <h1>Accountant Panel</h1>
-            <p>Manually Verify Payments</p>
+            <h1>Accountant Desk</h1>
+            <p>Manual Payment Entry</p>
         </header>
 
         <div class="search-section">
@@ -109,12 +121,12 @@
                 <i class="fas fa-search"></i>
                 <input type="tel" id="mobileInput" placeholder="Enter Mobile Number" maxlength="10">
             </div>
-            <button onclick="searchUser()" style="background: #ff9f43; color: #333; font-weight: bold;">
-                Find User
+            <button onclick="searchUser()" class="search-btn">
+                <i class="fas fa-search"></i> Find User
             </button>
         </div>
 
-        <div id="resultSection" class="result-section hidden">
+        <div id="resultSection" class="hidden">
             <div id="ordersContainer"></div>
         </div>
 
@@ -122,19 +134,22 @@
             <i class="fas fa-exclamation-circle"></i> User not found!
         </div>
 
-        <div style="margin-top: 30px; text-align: center;">
-            <a href="index.html" style="color: #666; text-decoration: none; font-size: 0.8rem;">
-                <i class="fas fa-arrow-left"></i> Back to User Home
+        <div
+            style="margin-top: 40px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+            <a href="index.html" style="color: #666; text-decoration: none; font-size: 0.9rem; margin-right: 20px;">
+                <i class="fas fa-home"></i> User Home
+            </a>
+            <a href="admin.html" style="color: #666; text-decoration: none; font-size: 0.9rem;">
+                <i class="fas fa-lock"></i> Admin Panel
             </a>
         </div>
     </div>
 
     <script>
-        // Update your Backend URL here
         const BACKEND_URL = 'https://vadva-group-backend-1.onrender.com';
         let TSHIRT_PRICE = 0;
 
-        // Fetch Price
+        // Fetch Price on Load
         fetch(`${BACKEND_URL}/api/settings`)
             .then(res => res.json())
             .then(data => {
@@ -153,6 +168,11 @@
 
             if (!mobile || mobile.length < 10) return alert('Enter valid number');
 
+            // Button Loading State
+            const btn = document.querySelector('.search-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+
             try {
                 const res = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
                 if (!res.ok) throw new Error();
@@ -166,27 +186,27 @@
                     let statusBadge = '';
 
                     if (user.paymentStatus) {
-                        // If ALREADY PAID
-                        statusBadge = `<span class="status-paid"><i class="fas fa-check"></i> PAID</span>`;
+                        // CASE 1: ALREADY PAID
+                        statusBadge = `<span class="status-paid"><i class="fas fa-check-circle"></i> PAID</span>`;
                         actionButtons = `
-                            <div style="margin-top:10px; text-align:center;">
-                                <small style="color:#aaa;">Payment Received</small>
+                            <div style="margin-top:15px; text-align:center;">
+                                <p style="color:#aaa; font-size:0.9rem; margin-bottom:5px;">Payment Received ✅</p>
                                 <button onclick="markUnpaid('${user._id}')" class="btn-unpaid">
-                                    <i class="fas fa-undo"></i> Mistake? Mark Unpaid
+                                    <i class="fas fa-undo"></i> Mistake? Mark as UNPAID
                                 </button>
                             </div>
                         `;
                     } else {
-                        // If PENDING
-                        statusBadge = `<span class="status-pending"><i class="fas fa-clock"></i> UNPAID</span>`;
+                        // CASE 2: PENDING
+                        statusBadge = `<span class="status-pending"><i class="fas fa-clock"></i> PENDING</span>`;
                         actionButtons = `
-                            <p style="margin-top:10px; font-size:0.8rem; color:#ccc;">Collect Payment via:</p>
+                            <p style="margin-top:15px; font-size:0.9rem; color:#ccc;">Select Payment Method:</p>
                             <div class="btn-group">
                                 <button onclick="markPaid('${user._id}', 'Cash')" class="btn-cash">
                                     <i class="fas fa-money-bill-wave"></i> Cash
                                 </button>
-                                <button onclick="markPaid('${user._id}', 'UPI')" class="btn-upi">
-                                    <i class="fas fa-mobile-alt"></i> GPay/UPI
+                                <button onclick="markPaid('${user._id}', 'Online')" class="btn-upi">
+                                    <i class="fas fa-qrcode"></i> Online
                                 </button>
                             </div>
                         `;
@@ -194,13 +214,13 @@
 
                     ordersContainer.innerHTML += `
                         <div class="card">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                                <h2 style="margin:0; font-size:1.1rem; color:#fff;">${user.fullName}</h2>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                                <h2 style="margin:0; font-size:1.3rem; color:#fff;">${user.fullName}</h2>
                                 ${statusBadge}
                             </div>
-                            <div class="detail-row">
-                                <span>Size: <strong>${user.size}</strong></span>
-                                <span>Amount: <strong style="color:#ff9f43;">₹${price}</strong></span>
+                            <div class="detail-row" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:5px;">
+                                <span><i class="fas fa-tshirt"></i> Size: <strong>${user.size}</strong></span>
+                                <span><i class="fas fa-rupee-sign"></i> Amount: <strong style="color:#ff9f43; font-size:1.1rem;">₹${price}</strong></span>
                             </div>
                             ${actionButtons}
                         </div>`;
@@ -209,44 +229,36 @@
                 resultSection.classList.remove('hidden');
             } catch (e) {
                 errorMsg.classList.remove('hidden');
+            } finally {
+                btn.innerHTML = originalText;
             }
         }
 
         async function markPaid(userId, mode) {
-            if (!confirm(`Confirm receiving payment via ${mode}?`)) return;
+            if (!confirm(`Confirm receiving ₹${TSHIRT_PRICE} via ${mode}?`)) return;
 
             try {
-                // Update status to TRUE
                 await fetch(`${BACKEND_URL}/api/user/${userId}/payment`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ paymentStatus: true })
                 });
-
-                // Refresh list
-                searchUser();
-                // Optional: Alert
-                // alert(`Payment updated via ${mode}`); 
-
+                searchUser(); // Refresh UI
             } catch (e) {
                 alert('Error updating payment');
             }
         }
 
         async function markUnpaid(userId) {
-            if (!confirm(`Are you sure you want to mark this as UNPAID?`)) return;
+            if (!confirm(`⚠️ Are you sure you want to mark this as UNPAID?`)) return;
 
             try {
-                // Update status to FALSE (Undo)
                 await fetch(`${BACKEND_URL}/api/user/${userId}/payment`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ paymentStatus: false })
                 });
-
-                // Refresh list
-                searchUser();
-
+                searchUser(); // Refresh UI
             } catch (e) {
                 alert('Error updating payment');
             }
