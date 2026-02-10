@@ -449,11 +449,6 @@
                 const keywords = ['success', 'paid', 'completed', 'done', 'sent', 'transaction', 'payment'];
                 const isSuccess = keywords.some(word => rawText.includes(word));
 
-                // Amount Check (Robust)
-                const amountStr = TOTAL_AMOUNT.toString();
-                const textWithoutCommas = rawText.replace(/,/g, '');
-                const amountFound = textWithoutCommas.includes(amountStr) || textWithoutCommas.includes(amountStr + ".00");
-
                 // UPI Check
                 let upiFound = false;
                 let expectedHandle = "";
