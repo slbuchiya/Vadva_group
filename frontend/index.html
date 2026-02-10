@@ -409,7 +409,7 @@
                     amountFound = cleanText.includes(TOTAL_AMOUNT.toString());
                 }
 
-                // 3. Receiver UPI ID Check
+                // 3. Receiver UPI ID Check (CRITICAL)
                 const targetUPI = ADMIN_UPI_ID.toLowerCase().trim();
                 const upiHandle = targetUPI.split('@')[0]; // e.g. "buchiyasachin8"
 
@@ -424,7 +424,7 @@
                     let failReason = "";
                     if (!isSuccess) failReason += "<li>Status 'Completed/Paid' not found.</li>";
                     if (!amountFound) failReason += `<li>Amount ₹${TOTAL_AMOUNT} not found.</li>`;
-                    if (!upiFound) failReason += `<li>Receiver UPI ID (${upiHandle}...) not found.</li>`;
+                    if (!upiFound) failReason += `<li>Receiver ID (${upiHandle}...) not found.</li>`;
 
                     status.innerHTML = `<ul style="text-align:left; color:#e53935; font-size:0.8rem; padding-left:15px;">
                                             <strong>Verification Failed:</strong>
