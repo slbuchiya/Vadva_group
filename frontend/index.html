@@ -4,16 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>T-Shirt Payment | Vadva Govindsura Group</title>
+    <title>T-Shirt Payment | Vadva Group</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        /* Specific overrides for the public page to make it "Best" */
+        /* Styles kept same as before */
         body {
-            /* Fallback is in style.css, but ensure no white override happens */
             background-color: #1e1e2f;
         }
 
@@ -46,12 +45,10 @@
             padding-left: 45px;
         }
 
-        /* Result Card Animations */
         .result-section {
             animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Receipt Modal */
         .receipt-modal {
             position: fixed;
             top: 0;
@@ -103,12 +100,6 @@
             text-align: right;
         }
 
-        .signature-img {
-            max-height: 50px;
-            display: block;
-            margin-left: auto;
-        }
-
         .download-btn {
             margin-top: 20px;
             width: 100%;
@@ -128,6 +119,23 @@
             font-size: 1.5rem;
             cursor: pointer;
             color: #888;
+        }
+
+        .view-receipt-btn {
+            background: #2e7d32;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            margin-top: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
         }
     </style>
 </head>
@@ -162,22 +170,29 @@
                     <strong id="totalAmount" style="font-size: 1.5rem; color: var(--text-dark);">₹0</strong>
                 </div>
 
-                <button id="payBtn" onclick="generateQR()">
-                    <i class="fas fa-qrcode"></i> Pay Now via UPI
-                </button>
+                <div id="actionButtons"></div>
 
                 <div id="qrSection" class="qr-section hidden">
                     <h3 style="margin-bottom: 15px;">Scan to Pay</h3>
                     <div id="qrcode"
                         style="padding: 10px; background: white; border-radius: 10px; display: inline-block;"></div>
-
                     <div style="margin-top: 20px;">
-                        <p class="upi-id"><i class="fas fa-copy"></i> <span id="upiIdDisplay">INSERT_UPI_HERE</span></p>
+                        <p class="upi-id"><i class="fas fa-copy"></i> <span id="upiIdDisplay"></span></p>
                     </div>
-
                     <a id="upiLink" href="#" class="upi-btn">
                         <i class="fas fa-external-link-alt"></i> Open UPI App
                     </a>
+
+                    <div id="markPaidContainer"
+                        style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                        <button onclick="handlePaymentAndPrint()"
+                            style="background: #e53935; width: 100%; padding: 12px; border-radius: 8px; font-weight: 600;">
+                            <i class="fas fa-check-circle"></i> Confirm Payment Received
+                        </button>
+                        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 8px;">
+                            (Click ONLY after receiving money)
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -187,103 +202,70 @@
         </div>
 
         <div id="receiptModal" class="receipt-modal hidden">
-            <div class="receipt-box" id="receiptContent">
+            <div class="receipt-box">
                 <span class="close-receipt" onclick="closeReceipt()">&times;</span>
                 <div class="receipt-header">
                     <div class="receipt-title">જય ગોવિંદસુરા દાદા યુવક મંડળ</div>
                     <div style="font-size: 0.8rem; color: #666;">Payment Receipt</div>
                     <div style="font-size: 0.8rem; color: #666;" id="receiptDate"></div>
                 </div>
-
                 <div class="receipt-body">
-                    <div class="receipt-row">
-                        <strong>Received From:</strong>
-                    </div>
+                    <div class="receipt-row"><strong>Received From:</strong></div>
                     <div style="text-align: left; margin-bottom: 15px; color: #555;" id="receiptNames"></div>
-
                     <div class="receipt-row"
                         style="font-size: 1.1rem; color: #2e7d32; border-top: 1px solid #eee; padding-top: 10px;">
-                        <strong>Amount Paid:</strong>
-                        <strong id="receiptAmount">₹0</strong>
+                        <strong>Amount Paid:</strong><strong id="receiptAmount">₹0</strong>
                     </div>
                 </div>
-
                 <div class="receipt-footer">
                     <div style="font-size: 0.8rem; font-weight: 600; margin-top: 5px;">Vadva Group</div>
                 </div>
-
-                <button class="download-btn" onclick="window.print()">
-                    <i class="fas fa-print"></i> Print / Save PDF
-                </button>
+                <button class="download-btn" onclick="window.print()"><i class="fas fa-print"></i> Print / Save
+                    PDF</button>
             </div>
         </div>
 
         <div style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-            <a href="admin.html"
-                style="color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.8rem; transition: color 0.3s;">
+            <a href="admin.html" style="color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.8rem;">
                 <i class="fas fa-lock"></i> Admin Login
             </a>
         </div>
     </div>
 
     <script>
-        // Render Backend URL (તમારી સાચી લિંક)
         const BACKEND_URL = 'https://vadva-group-backend-1.onrender.com';
-
         let UPI_ID = 'mobile@upi';
         let CUSTOM_QR = '';
-        let TSHIRT_PRICE = 0; // Global Price Variable
+        let TSHIRT_PRICE = 0;
         let TOTAL_AMOUNT = 0;
         let ORDER_DETAILS_TEXT = '';
 
         // Fetch settings on load
-        refreshSettings();
-
-        function refreshSettings() {
-            // સુધારો: Settings માંથી Price પણ લાવો
-            fetch(`${BACKEND_URL}/api/settings`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.upiId) UPI_ID = data.upiId;
-                    if (data.tshirtPrice) TSHIRT_PRICE = parseInt(data.tshirtPrice) || 0; // Set Global Price
-
-                    if (data.qrImage) {
-                        CUSTOM_QR = data.qrImage.startsWith('http') ? data.qrImage : `${BACKEND_URL}${data.qrImage}`;
-                    }
-
-                    if (data.bgImage && data.bgImage.trim() !== '') {
-                        const bgUrl = data.bgImage.startsWith('http') ? data.bgImage : `${BACKEND_URL}${data.bgImage}`;
-                        document.body.style.backgroundImage = `url('${bgUrl}')`;
-                        document.body.style.backgroundSize = 'cover';
-                        document.body.style.backgroundPosition = 'center';
-                        document.body.style.backgroundAttachment = 'fixed';
-                    } else {
-                        document.body.style.backgroundImage = '';
-                    }
-                })
-                .catch(err => console.log('Using default settings', err));
-        }
+        fetch(`${BACKEND_URL}/api/settings`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.upiId) UPI_ID = data.upiId;
+                if (data.tshirtPrice) TSHIRT_PRICE = parseInt(data.tshirtPrice) || 0;
+                if (data.qrImage) CUSTOM_QR = data.qrImage.startsWith('http') ? data.qrImage : `${BACKEND_URL}${data.qrImage}`;
+                if (data.bgImage) document.body.style.backgroundImage = `url('${data.bgImage.startsWith('http') ? data.bgImage : BACKEND_URL + data.bgImage}')`;
+            });
 
         async function searchUser() {
             const mobile = document.getElementById('mobileInput').value;
             const resultSection = document.getElementById('resultSection');
             const ordersContainer = document.getElementById('ordersContainer');
-            const errorMsg = document.getElementById('errorMsg');
+            const actionButtons = document.getElementById('actionButtons');
             const qrSection = document.getElementById('qrSection');
 
-            // Reset UI
             resultSection.classList.add('hidden');
-            errorMsg.classList.add('hidden');
+            document.getElementById('errorMsg').classList.add('hidden');
             qrSection.classList.add('hidden');
-            document.getElementById('qrcode').innerHTML = '';
             ordersContainer.innerHTML = '';
+            actionButtons.innerHTML = '';
             TOTAL_AMOUNT = 0;
             ORDER_DETAILS_TEXT = '';
 
-            if (!mobile || mobile.length < 10) {
-                alert('Please enter a valid mobile number');
-                return;
-            }
+            if (!mobile || mobile.length < 10) return alert('Enter valid number');
 
             const btn = document.querySelector('button[onclick="searchUser()"]');
             const originalText = btn.innerHTML;
@@ -291,85 +273,63 @@
             btn.disabled = true;
 
             try {
-                const response = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
+                const res = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
+                if (!res.ok) throw new Error();
+                const users = await res.json();
+                if (users.length === 0) throw new Error();
 
-                if (!response.ok) throw new Error('User not found');
-
-                const users = await response.json();
-
-                if (users.length === 0) throw new Error('No users found');
-
-                let paidUsers = [];
+                let allPaid = true;
+                let paidUsersForReceipt = [];
                 let paidAmount = 0;
 
-                users.forEach((user, index) => {
-                    // સુધારો: Global Price નો ઉપયોગ કરો
-                    const currentAmount = TSHIRT_PRICE > 0 ? TSHIRT_PRICE : user.amount;
-
-                    TOTAL_AMOUNT += currentAmount;
+                users.forEach((user, i) => {
+                    const price = TSHIRT_PRICE > 0 ? TSHIRT_PRICE : user.amount;
+                    TOTAL_AMOUNT += price;
                     ORDER_DETAILS_TEXT += `${user.fullName} (${user.size}), `;
 
-                    if (user.paymentStatus) {
-                        paidUsers.push(user);
-                        paidAmount += currentAmount;
+                    if (!user.paymentStatus) allPaid = false;
+                    else {
+                        paidUsersForReceipt.push(user);
+                        paidAmount += price;
                     }
 
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.style.animationDelay = `${index * 0.1}s`;
+                    const badge = user.paymentStatus
+                        ? '<span style="background:#e8f5e9; color:#2e7d32; padding:2px 6px; border-radius:4px; font-size:0.7rem;">PAID</span>'
+                        : '<span style="background:#fff3e0; color:#ef6c00; padding:2px 6px; border-radius:4px; font-size:0.7rem;">PENDING</span>';
 
-                    // Status Badge
-                    const statusBadge = user.paymentStatus
-                        ? `<span style="background:#e8f5e9; color:#2e7d32; padding:2px 6px; border-radius:4px; font-size:0.7rem; margin-left:5px;"><i class="fas fa-check-circle"></i> PAID</span>`
-                        : `<span style="background:#fff3e0; color:#ef6c00; padding:2px 6px; border-radius:4px; font-size:0.7rem; margin-left:5px;"><i class="fas fa-clock"></i> PENDING</span>`;
-
-                    card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h2 style="margin:0; font-size:1.2rem; color:var(--primary-color);">Order #${index + 1}</h2>
-                    <div>
-                        <span style="background:var(--primary-color); color:white; padding:2px 8px; border-radius:10px; font-size:0.7rem;">${user.tshirtName}</span>
-                        ${statusBadge}
-                    </div>
-                </div>
-                <div class="detail-row">
-                    <span><i class="fas fa-user"></i> Name:</span>
-                    <strong>${user.fullName}</strong>
-                </div>
-                <div class="detail-row">
-                    <span><i class="fas fa-ruler"></i> Size:</span>
-                    <strong>${user.size}</strong>
-                </div>
-                <div class="detail-row" style="border-bottom:none;">
-                    <span><i class="fas fa-rupee-sign"></i> Amount:</span>
-                    <strong style="font-size:1.1rem;">₹${currentAmount}</strong>
-                </div>
-            `;
-                    ordersContainer.appendChild(card);
+                    ordersContainer.innerHTML += `
+                        <div class="card" style="animation-delay: ${i * 0.1}s">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                                <h2 style="margin:0; font-size:1.2rem; color:var(--primary-color);">Order #${i + 1}</h2>
+                                ${badge}
+                            </div>
+                            <div class="detail-row"><span>Name:</span><strong>${user.fullName}</strong></div>
+                            <div class="detail-row" style="border-bottom:none;"><span>Amount:</span><strong>₹${price}</strong></div>
+                        </div>`;
                 });
 
                 document.getElementById('totalAmount').textContent = `₹${TOTAL_AMOUNT}`;
 
-                // Show Receipt Button if there are paid users
-                const receiptBtnContainer = document.getElementById('receiptBtnContainer');
-                if (receiptBtnContainer) receiptBtnContainer.remove(); // Clean up previous
-
-                if (paidUsers.length > 0) {
-                    const btnDiv = document.createElement('div');
-                    btnDiv.id = 'receiptBtnContainer';
-                    btnDiv.style.marginTop = '20px';
-                    btnDiv.innerHTML = `
-                        <button onclick='showReceipt(${JSON.stringify(paidUsers)}, ${paidAmount})' style="background: #2e7d32;">
-                            <i class="fas fa-file-invoice"></i> Download Receipt
+                if (allPaid) {
+                    // If everything is paid, show Receipt button
+                    actionButtons.innerHTML = `
+                        <button onclick='showReceipt(${JSON.stringify(paidUsersForReceipt)}, ${paidAmount})' class="view-receipt-btn">
+                            <i class="fas fa-file-invoice"></i> View & Download Receipt
+                        </button>
+                        <p style="text-align:center; color:#81c784; margin-top:10px;"><i class="fas fa-check-circle"></i> Payment Completed</p>
+                    `;
+                } else {
+                    // If pending, show Pay button
+                    actionButtons.innerHTML = `
+                        <button id="payBtn" onclick="generateQR()">
+                            <i class="fas fa-qrcode"></i> Pay Now via UPI
                         </button>
                     `;
-                    // Insert before the payment card
-                    const totalCard = document.querySelector('.total-card');
-                    totalCard.parentNode.insertBefore(btnDiv, totalCard);
                 }
 
                 resultSection.classList.remove('hidden');
-            } catch (error) {
-                errorMsg.classList.remove('hidden');
+            } catch (e) {
+                document.getElementById('errorMsg').classList.remove('hidden');
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
@@ -382,115 +342,59 @@
 
             const qrSection = document.getElementById('qrSection');
             qrSection.classList.remove('hidden');
-
             qrSection.scrollIntoView({ behavior: 'smooth' });
 
             const qrContainer = document.getElementById('qrcode');
             qrContainer.innerHTML = '';
 
             if (CUSTOM_QR) {
-                const img = document.createElement('img');
-                img.src = CUSTOM_QR;
-                img.style.width = '100%';
-                img.style.maxWidth = '200px';
-                img.style.borderRadius = '10px';
-                qrContainer.appendChild(img);
+                qrContainer.innerHTML = `<img src="${CUSTOM_QR}" style="width:100%; max-width:200px; border-radius:10px;">`;
             } else {
-                new QRCode(qrContainer, {
-                    text: upiUrl,
-                    width: 200,
-                    height: 200,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
+                new QRCode(qrContainer, { text: upiUrl, width: 200, height: 200 });
             }
-
             document.getElementById('upiLink').href = upiUrl;
             document.getElementById('upiIdDisplay').textContent = UPI_ID;
-
-            // Add "Confirm Payment Received" button if not already present
-            if (!document.getElementById('markPaidBtn')) {
-                const btnDiv = document.createElement('div');
-                btnDiv.id = 'markPaidContainer';
-                btnDiv.style.marginTop = '20px';
-                btnDiv.innerHTML = `
-                    <button id="markPaidBtn" onclick="handlePaymentAndPrint()" style="background: #e53935; width: 100%;">
-                        <i class="fas fa-check-circle"></i> Confirm Payment Received
-                    </button>
-                    <p style="font-size: 0.8rem; color: #aaa; margin-top: 5px;">(Click this ONLY after receiving money)</p>
-                `;
-                qrSection.appendChild(btnDiv);
-            }
         }
 
         async function handlePaymentAndPrint() {
             if (!confirm(`Confirm that you have received ₹${TOTAL_AMOUNT}?`)) return;
 
-            const btn = document.getElementById('markPaidBtn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            btn.disabled = true;
-
             const mobile = document.getElementById('mobileInput').value;
 
             try {
-                // 1. Get current users to find unpaid ones
-                const response = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
-                const users = await response.json();
+                // 1. Get unpaid users
+                const res = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
+                const users = await res.json();
+                const unpaid = users.filter(u => !u.paymentStatus);
 
-                const unpaidUsers = users.filter(u => !u.paymentStatus);
-
-                // 2. Mark each unpaid user as paid
-                const updatePromises = unpaidUsers.map(user =>
-                    fetch(`${BACKEND_URL}/api/user/${user._id}/payment`, {
+                // 2. Mark them as paid
+                await Promise.all(unpaid.map(u =>
+                    fetch(`${BACKEND_URL}/api/user/${u._id}/payment`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ paymentStatus: true })
                     })
-                );
+                ));
 
-                await Promise.all(updatePromises);
+                // 3. Refresh and Show Receipt
+                await searchUser(); // This will update UI to "Paid" state
 
-                // 3. Refresh data to show paid status
-                await searchUser();
+                // Calculate paid amount for receipt
+                let totalPaid = 0;
+                users.forEach(u => totalPaid += (TSHIRT_PRICE > 0 ? TSHIRT_PRICE : u.amount));
 
-                // 4. GENERATE RECEIPT IMMEDIATELY
-                // We need to fetch the updated user list to get the full paid details for the receipt
-                const updatedResponse = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
-                const updatedUsers = await updatedResponse.json();
+                // Show receipt immediately
+                showReceipt(users, totalPaid);
 
-                // Filter for PAID users (or just the ones we just paid?)
-                // Usually a receipt is for the whole order history or just this transaction?
-                // The implementation implies showing receipt for ALL paid items.
-                const paidUsers = updatedUsers.filter(u => u.paymentStatus);
-                let totalPaidAmount = 0;
-                paidUsers.forEach(u => {
-                    const price = TSHIRT_PRICE > 0 ? TSHIRT_PRICE : u.amount;
-                    totalPaidAmount += price;
-                });
-
-                if (paidUsers.length > 0) {
-                    showReceipt(paidUsers, totalPaidAmount);
-                }
-
-            } catch (error) {
-                alert('Error updating payment status: ' + error.message);
-                console.error(error);
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+            } catch (e) {
+                alert('Error updating payment.');
             }
         }
 
         function showReceipt(users, totalAmount) {
-            const date = new Date().toLocaleDateString('en-IN');
-            document.getElementById('receiptDate').innerText = date;
-
-            const namesHtml = users.map(u => `<div>${u.fullName} (${u.tshirtName})</div>`).join('');
-            document.getElementById('receiptNames').innerHTML = namesHtml;
-
+            document.getElementById('receiptDate').innerText = new Date().toLocaleDateString('en-IN');
+            document.getElementById('receiptNames').innerHTML = users.map(u => `<div>${u.fullName} (${u.tshirtName})</div>`).join('');
             document.getElementById('receiptAmount').innerText = `₹${totalAmount}`;
-
             document.getElementById('receiptModal').classList.remove('hidden');
         }
 

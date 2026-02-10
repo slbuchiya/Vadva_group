@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Receipt | Vadva Group</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .receipt-container {
+            background: white;
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            border-top: 5px solid #2e7d32;
+        }
+
+        .header {
+            margin-bottom: 20px;
+            border-bottom: 2px dashed #eee;
+            padding-bottom: 20px;
+        }
+
+        .title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #d32f2f;
+            margin: 0;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .details {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            font-weight: 700;
+            color: #2e7d32;
+            font-size: 1.2rem;
+        }
+
+        .stamp {
+            margin-top: 30px;
+            border: 2px solid #2e7d32;
+            color: #2e7d32;
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            transform: rotate(-5deg);
+            opacity: 0.8;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .print-btn {
+            background: #2e7d32;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .back-link {
+            display: block;
+            margin-top: 15px;
+            color: #666;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .print-btn,
+            .back-link {
+                display: none;
+            }
+
+            .receipt-container {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="receipt-container" id="receipt">
+        <div class="header">
+            <h1 class="title">જય ગોવિંદસુરા દાદા યુવક મંડળ</h1>
+            <div class="subtitle">Payment Receipt</div>
+            <div class="subtitle" id="rDate"></div>
+        </div>
+
+        <div class="details" id="userList">
+            <p style="text-align:center; color:#888;">Loading...</p>
+        </div>
+
+        <div class="total-row">
+            <span>Total Paid:</span>
+            <span id="rTotal">₹0</span>
+        </div>
+
+        <div class="stamp">PAID</div>
+
+        <div class="footer">
+            Thank you for your contribution!<br>
+            <strong>Vadva Group Event 2026</strong>
+        </div>
+
+        <button class="print-btn" onclick="window.print()">
+            <i class="fas fa-print"></i> Print / Save PDF
+        </button>
+        <a href="index.html" class="back-link">Back to Home</a>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'https://vadva-group-backend-1.onrender.com';
+
+        // URL માંથી મોબાઈલ નંબર મેળવો
+        const urlParams = new URLSearchParams(window.location.search);
+        const mobile = urlParams.get('mobile');
+
+        if (!mobile) {
+            alert('No mobile number provided');
+            window.location.href = 'index.html';
+        }
+
+        async function loadReceipt() {
+            try {
+                // Settings લાવો (Global Price માટે)
+                const settingsRes = await fetch(`${BACKEND_URL}/api/settings`);
+                const settings = await settingsRes.json();
+                const globalPrice = parseInt(settings.tshirtPrice) || 0;
+
+                // User લાવો
+                const res = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
+                const users = await res.json();
+
+                const userList = document.getElementById('userList');
+                const rTotal = document.getElementById('rTotal');
+                const rDate = document.getElementById('rDate');
+
+                userList.innerHTML = '';
+                let total = 0;
+                let hasPaid = false;
+
+                users.forEach(user => {
+                    if (user.paymentStatus) {
+                        hasPaid = true;
+                        const price = globalPrice > 0 ? globalPrice : user.amount;
+                        total += price;
+
+                        userList.innerHTML += `
+                            <div class="row">
+                                <span>${user.fullName} (${user.tshirtName})</span>
+                                <span>₹${price}</span>
+                            </div>
+                        `;
+                    }
+                });
+
+                if (!hasPaid) {
+                    document.body.innerHTML = '<h2 style="text-align:center">Payment Pending. No receipt available.</h2><a href="index.html" style="display:block;text-align:center">Go Back</a>';
+                    return;
+                }
+
+                rTotal.textContent = `₹${total}`;
+                rDate.textContent = new Date().toLocaleDateString('en-IN');
+
+            } catch (err) {
+                console.error(err);
+                alert('Error loading receipt');
+            }
+        }
+
+        loadReceipt();
+    </script>
+</body>
+
+</html>
