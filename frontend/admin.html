@@ -10,7 +10,7 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Admin Specific Styles */
+        /* Admin Specific Styles - kept exactly as provided */
         .admin-header {
             display: flex;
             justify-content: space-between;
@@ -136,7 +136,6 @@
 </head>
 
 <body>
-    <!-- PIN Overlay -->
     <div id="pinOverlay"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1e1e2f; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center;">
         <h2 style="margin-bottom: 20px;">Enter Admin PIN</h2>
@@ -172,7 +171,7 @@
             <div class="settings-group">
                 <label>Global Price (Set Amount for ALL Users)</label>
                 <div style="display: flex; gap: 10px;">
-                    <input type="number" id="globalPriceInput" placeholder="Enter Amount" style="flex: 1;" value="500">
+                    <input type="number" id="globalPriceInput" placeholder="Enter Amount" style="flex: 1;">
                     <button onclick="setGlobalPrice()"
                         style="width: auto; padding: 0 20px; background: #ff9800; color: black;">Set for All</button>
                 </div>
@@ -234,12 +233,8 @@
     </div>
 
     <script>
-        // Render Backend URL (આ ખાસ ઉમેરવું)
+        // Render Backend URL
         const BACKEND_URL = 'https://vadva-group-backend-1.onrender.com';
-
-        // Initialize
-        // fetchSettings(); // Moved to checkPin
-        // fetchOrders();   // Moved to checkPin
 
         function checkPin() {
             const pin = document.getElementById('pinInput').value;
@@ -258,15 +253,16 @@
         }
 
         function fetchSettings() {
-            // સુધારો 1: Render URL વાપરો
             fetch(`${BACKEND_URL}/api/settings`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.upiId) {
                         document.getElementById('upiIdInput').value = data.upiId;
                     }
+                    if (data.tshirtPrice) {
+                        document.getElementById('globalPriceInput').value = data.tshirtPrice;
+                    }
                     if (data.qrImage) {
-                        // સુધારો 2: ઈમેજ પાથ સાથે URL જોડો
                         const qrUrl = data.qrImage.startsWith('http') ? data.qrImage : `${BACKEND_URL}${data.qrImage}`;
                         document.getElementById('qrPreview').innerHTML = `<img src="${qrUrl}" class="preview-img">`;
                     }
@@ -289,15 +285,16 @@
                 .catch(err => alert('Error updating UPI'));
         }
 
+        // Updated: Correct API Endpoint for Price
         function setGlobalPrice() {
-            const amount = document.getElementById('globalPriceInput').value;
-            if (!amount) return alert('Please enter an amount');
+            const price = document.getElementById('globalPriceInput').value;
+            if (!price) return alert('Please enter an amount');
 
-            if (confirm(`Are you sure you want to set price to ₹${amount} for ALL users?`)) {
-                fetch(`${BACKEND_URL}/api/users/amount`, {
+            if (confirm(`Set global price to ₹${price}? This will update calculation for all users.`)) {
+                fetch(`${BACKEND_URL}/api/settings/price`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount })
+                    body: JSON.stringify({ price })
                 })
                     .then(res => res.json())
                     .then(data => {
@@ -322,13 +319,13 @@
                 .then(res => res.json())
                 .then(data => {
                     alert('QR Image Uploaded');
-                    fetchSettings(); // Refresh preview
+                    fetchSettings();
                 })
                 .catch(err => alert('Upload failed'));
         }
 
         function removeQR() {
-            if (confirm('Are you sure you want to remove custom QR? Default QR will be generated.')) {
+            if (confirm('Remove custom QR?')) {
                 fetch(`${BACKEND_URL}/api/settings/qr`, { method: 'DELETE' })
                     .then(res => res.json())
                     .then(() => {
@@ -357,10 +354,17 @@
                 .catch(err => alert('Upload failed'));
         }
 
+        // Updated: Uses Global Price for Calculation
         async function fetchOrders() {
             const list = document.getElementById('adminOrderList');
             try {
-                const res = await fetch(`${BACKEND_URL}/api/users`); // Render URL
+                // 1. Get Settings first (to get current Price)
+                const settingsRes = await fetch(`${BACKEND_URL}/api/settings`);
+                const settings = await settingsRes.json();
+                const currentPrice = parseInt(settings.tshirtPrice) || 0;
+
+                // 2. Get Users
+                const res = await fetch(`${BACKEND_URL}/api/users`);
                 const users = await res.json();
 
                 if (users.length === 0) {
@@ -368,14 +372,16 @@
                     return;
                 }
 
-                // Calculate Stats
                 let totalAmt = 0;
                 let paid = 0;
                 let pending = 0;
 
                 let html = '';
                 users.forEach(user => {
-                    totalAmt += user.amount;
+                    // Use Global Price instead of user.amount
+                    const amountToDisplay = currentPrice;
+                    totalAmt += amountToDisplay;
+
                     if (user.paymentStatus) paid++; else pending++;
 
                     const statusClass = user.paymentStatus ? 'status-paid' : 'status-pending';
@@ -391,7 +397,7 @@
                                 </div>
                             </div>
                             <div style="text-align: right;">
-                                <div style="font-size: 1.2rem; font-weight: 700; margin-bottom: 5px;">₹${user.amount}</div>
+                                <div style="font-size: 1.2rem; font-weight: 700; margin-bottom: 5px;">₹${amountToDisplay}</div>
                                 <span class="status-badge ${statusClass}" onclick="toggleStatus('${user._id}', ${user.paymentStatus})">
                                     ${statusText} <i class="fas fa-sync-alt" style="font-size: 0.7rem; margin-left: 5px;"></i>
                                 </span>
@@ -413,7 +419,6 @@
 
         function toggleStatus(userId, currentStatus) {
             const newStatus = !currentStatus;
-            // સુધારો 3: Status અપડેટ માટે Render URL
             fetch(`${BACKEND_URL}/api/user/${userId}/payment`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },

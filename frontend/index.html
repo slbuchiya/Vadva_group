@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>T-Shirt Payment | Vadva Group</title>
+    <title>T-Shirt Payment | Vadva Govindsura Group</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
@@ -209,8 +209,7 @@
                 </div>
 
                 <div class="receipt-footer">
-                    <img src="signature.png" alt="Signature" class="signature-img">
-                    <div style="font-size: 0.8rem; font-weight: 600; margin-top: 5px;">SACHIN L BUCHIYA</div>
+                    <div style="font-size: 0.8rem; font-weight: 600; margin-top: 5px;">Vadva Group</div>
                 </div>
 
                 <button class="download-btn" onclick="window.print()">
@@ -231,8 +230,9 @@
         // Render Backend URL (તમારી સાચી લિંક)
         const BACKEND_URL = 'https://vadva-group-backend-1.onrender.com';
 
-        let UPI_ID = 'buchiyasachin8@okicici';
+        let UPI_ID = 'mobile@upi';
         let CUSTOM_QR = '';
+        let TSHIRT_PRICE = 0; // Global Price Variable
         let TOTAL_AMOUNT = 0;
         let ORDER_DETAILS_TEXT = '';
 
@@ -240,19 +240,18 @@
         refreshSettings();
 
         function refreshSettings() {
-            // સુધારો 1: અહી Render ની લિંક વાપરી છે
+            // સુધારો: Settings માંથી Price પણ લાવો
             fetch(`${BACKEND_URL}/api/settings`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.upiId) UPI_ID = data.upiId;
+                    if (data.tshirtPrice) TSHIRT_PRICE = parseInt(data.tshirtPrice) || 0; // Set Global Price
 
-                    // સુધારો 2: જો QR ઈમેજ હોય તો તેની આગળ પણ URL લગાવવી પડે
                     if (data.qrImage) {
                         CUSTOM_QR = data.qrImage.startsWith('http') ? data.qrImage : `${BACKEND_URL}${data.qrImage}`;
                     }
 
                     if (data.bgImage && data.bgImage.trim() !== '') {
-                        // સુધારો 3: બેકગ્રાઉન્ડ ઈમેજ માટે પણ URL ઉમેરી
                         const bgUrl = data.bgImage.startsWith('http') ? data.bgImage : `${BACKEND_URL}${data.bgImage}`;
                         document.body.style.backgroundImage = `url('${bgUrl}')`;
                         document.body.style.backgroundSize = 'cover';
@@ -292,7 +291,6 @@
             btn.disabled = true;
 
             try {
-                // સુધારો 4: API સર્ચ માટે Render URL
                 const response = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
 
                 if (!response.ok) throw new Error('User not found');
@@ -305,12 +303,15 @@
                 let paidAmount = 0;
 
                 users.forEach((user, index) => {
-                    TOTAL_AMOUNT += user.amount;
+                    // સુધારો: Global Price નો ઉપયોગ કરો
+                    const currentAmount = TSHIRT_PRICE > 0 ? TSHIRT_PRICE : user.amount;
+
+                    TOTAL_AMOUNT += currentAmount;
                     ORDER_DETAILS_TEXT += `${user.fullName} (${user.size}), `;
 
                     if (user.paymentStatus) {
                         paidUsers.push(user);
-                        paidAmount += user.amount;
+                        paidAmount += currentAmount;
                     }
 
                     const card = document.createElement('div');
@@ -334,14 +335,13 @@
                     <span><i class="fas fa-user"></i> Name:</span>
                     <strong>${user.fullName}</strong>
                 </div>
-                <!-- ... existing rows ... -->
                 <div class="detail-row">
                     <span><i class="fas fa-ruler"></i> Size:</span>
                     <strong>${user.size}</strong>
                 </div>
                 <div class="detail-row" style="border-bottom:none;">
                     <span><i class="fas fa-rupee-sign"></i> Amount:</span>
-                    <strong style="font-size:1.1rem;">₹${user.amount}</strong>
+                    <strong style="font-size:1.1rem;">₹${currentAmount}</strong>
                 </div>
             `;
                     ordersContainer.appendChild(card);
@@ -390,7 +390,7 @@
 
             if (CUSTOM_QR) {
                 const img = document.createElement('img');
-                img.src = CUSTOM_QR; // Already handled URL above
+                img.src = CUSTOM_QR;
                 img.style.width = '100%';
                 img.style.maxWidth = '200px';
                 img.style.borderRadius = '10px';
@@ -408,18 +408,6 @@
 
             document.getElementById('upiLink').href = upiUrl;
             document.getElementById('upiIdDisplay').textContent = UPI_ID;
-
-            // Check payment status to show receipt button
-            checkPaymentAndShowReceipt();
-        }
-
-        function checkPaymentAndShowReceipt() {
-            // In a real app, this would verify with backend. 
-            // Here we check if the search result had paid users.
-            // But searchUser() resets everything. We need to persist the loaded users or re-check.
-
-            // Actually, let's just add a "Download Receipt" button if the user is PAID.
-            // We need to modify searchUser to check status.
         }
 
         function showReceipt(users, totalAmount) {
