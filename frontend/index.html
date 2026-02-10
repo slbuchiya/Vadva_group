@@ -408,6 +408,70 @@
 
             document.getElementById('upiLink').href = upiUrl;
             document.getElementById('upiIdDisplay').textContent = UPI_ID;
+
+            // Add "Mark as Paid & Print" button if not already present
+            if (!document.getElementById('markPaidBtn')) {
+                const btnDiv = document.createElement('div');
+                btnDiv.id = 'markPaidContainer';
+                btnDiv.style.marginTop = '20px';
+                btnDiv.innerHTML = `
+                    <button id="markPaidBtn" onclick="handlePaymentAndPrint()" style="background: #e53935; width: 100%;">
+                        <i class="fas fa-check-double"></i> Mark as Paid & Print
+                    </button>
+                    <p style="font-size: 0.8rem; color: #aaa; margin-top: 5px;">(Use this after receiving payment)</p>
+                `;
+                qrSection.appendChild(btnDiv);
+            }
+        }
+
+        async function handlePaymentAndPrint() {
+            if (!confirm(`Confirm that you have received ₹${TOTAL_AMOUNT}?`)) return;
+
+            const btn = document.getElementById('markPaidBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            const mobile = document.getElementById('mobileInput').value;
+            
+            try {
+                // 1. Get current users to find unpaid ones
+                const response = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
+                const users = await response.json();
+                
+                const unpaidUsers = users.filter(u => !u.paymentStatus);
+                
+                // 2. Mark each unpaid user as paid
+                const updatePromises = unpaidUsers.map(user => 
+                    fetch(`${BACKEND_URL}/api/user/${user._id}/payment`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentStatus: true })
+                    })
+                );
+
+                await Promise.all(updatePromises);
+
+                // 3. Refresh data to show paid status and generate receipt
+                await searchUser();
+
+                // 4. Automatically click the download receipt button if it exists
+                // We need to wait a brief moment for searchUser to render the receipt button
+                setTimeout(() => {
+                   const receiptBtn = document.querySelector('#receiptBtnContainer button');
+                   if (receiptBtn) {
+                       receiptBtn.click();
+                   } else {
+                       alert('Payment marked, but could not auto-open receipt. Please click Download Receipt manually.');
+                   }
+                }, 500);
+
+            } catch (error) {
+                alert('Error updating payment status: ' + error.message);
+                console.error(error);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
         }
 
         function showReceipt(users, totalAmount) {
