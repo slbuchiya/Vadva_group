@@ -170,6 +170,15 @@
             </div>
 
             <div class="settings-group">
+                <label>Global Price (Set Amount for ALL Users)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="globalPriceInput" placeholder="Enter Amount" style="flex: 1;" value="500">
+                    <button onclick="setGlobalPrice()"
+                        style="width: auto; padding: 0 20px; background: #ff9800; color: black;">Set for All</button>
+                </div>
+            </div>
+
+            <div class="settings-group">
                 <label>Custom QR Code Image</label>
                 <input type="file" id="qrUpload" hidden onchange="uploadQR()">
                 <label for="qrUpload" class="file-upload-btn">
@@ -278,6 +287,25 @@
                 .then(res => res.json())
                 .then(data => alert('UPI ID Updated!'))
                 .catch(err => alert('Error updating UPI'));
+        }
+
+        function setGlobalPrice() {
+            const amount = document.getElementById('globalPriceInput').value;
+            if (!amount) return alert('Please enter an amount');
+
+            if (confirm(`Are you sure you want to set price to ₹${amount} for ALL users?`)) {
+                fetch(`${BACKEND_URL}/api/users/amount`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        alert(data.message);
+                        fetchOrders(); // Refresh list to show new prices
+                    })
+                    .catch(err => alert('Error updating price'));
+            }
         }
 
         function uploadQR() {

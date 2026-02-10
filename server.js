@@ -1131,6 +1131,20 @@ app.get('/admin.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend', 'admin.html'));
 });
 
+// Update ALL users amount
+app.post('/api/users/amount', (req, res) => {
+    const { amount } = req.body;
+    if (!amount) {
+        return res.status(400).json({ error: 'Amount is required' });
+    }
+
+    users.forEach(user => {
+        user.amount = Number(amount);
+    });
+
+    res.json({ message: `Updated all users to ₹${amount}`, count: users.length });
+});
+
 // Start Server
 app.listen(PORT, () => {
     console.log(`✅ Mock Server running at http://localhost:${PORT}`);
