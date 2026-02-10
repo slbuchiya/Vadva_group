@@ -349,23 +349,10 @@
 
                 document.getElementById('totalAmount').textContent = `₹${TOTAL_AMOUNT}`;
 
-                // Show Receipt Button if there are paid users
+                // REMOVED: Receipt Button is no longer shown here. 
+                // It will only appear after checking "Mark as Paid & Print"
                 const receiptBtnContainer = document.getElementById('receiptBtnContainer');
-                if (receiptBtnContainer) receiptBtnContainer.remove(); // Clean up previous
-
-                if (paidUsers.length > 0) {
-                    const btnDiv = document.createElement('div');
-                    btnDiv.id = 'receiptBtnContainer';
-                    btnDiv.style.marginTop = '20px';
-                    btnDiv.innerHTML = `
-                        <button onclick='showReceipt(${JSON.stringify(paidUsers)}, ${paidAmount})' style="background: #2e7d32;">
-                            <i class="fas fa-file-invoice"></i> Download Receipt
-                        </button>
-                    `;
-                    // Insert before the payment card
-                    const totalCard = document.querySelector('.total-card');
-                    totalCard.parentNode.insertBefore(btnDiv, totalCard);
-                }
+                if (receiptBtnContainer) receiptBtnContainer.remove();
 
                 resultSection.classList.remove('hidden');
             } catch (error) {
@@ -433,16 +420,16 @@
             btn.disabled = true;
 
             const mobile = document.getElementById('mobileInput').value;
-            
+
             try {
                 // 1. Get current users to find unpaid ones
                 const response = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
                 const users = await response.json();
-                
+
                 const unpaidUsers = users.filter(u => !u.paymentStatus);
-                
+
                 // 2. Mark each unpaid user as paid
-                const updatePromises = unpaidUsers.map(user => 
+                const updatePromises = unpaidUsers.map(user =>
                     fetch(`${BACKEND_URL}/api/user/${user._id}/payment`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
@@ -452,19 +439,27 @@
 
                 await Promise.all(updatePromises);
 
-                // 3. Refresh data to show paid status and generate receipt
+                // 3. Refresh data to show paid status
                 await searchUser();
 
-                // 4. Automatically click the download receipt button if it exists
-                // We need to wait a brief moment for searchUser to render the receipt button
-                setTimeout(() => {
-                   const receiptBtn = document.querySelector('#receiptBtnContainer button');
-                   if (receiptBtn) {
-                       receiptBtn.click();
-                   } else {
-                       alert('Payment marked, but could not auto-open receipt. Please click Download Receipt manually.');
-                   }
-                }, 500);
+                // 4. GENERATE RECEIPT IMMEDIATELY
+                // We need to fetch the updated user list to get the full paid details for the receipt
+                const updatedResponse = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
+                const updatedUsers = await updatedResponse.json();
+
+                // Filter for PAID users (or just the ones we just paid?)
+                // Usually a receipt is for the whole order history or just this transaction?
+                // The implementation implies showing receipt for ALL paid items.
+                const paidUsers = updatedUsers.filter(u => u.paymentStatus);
+                let totalPaidAmount = 0;
+                paidUsers.forEach(u => {
+                    const price = TSHIRT_PRICE > 0 ? TSHIRT_PRICE : u.amount;
+                    totalPaidAmount += price;
+                });
+
+                if (paidUsers.length > 0) {
+                    showReceipt(paidUsers, totalPaidAmount);
+                }
 
             } catch (error) {
                 alert('Error updating payment status: ' + error.message);
