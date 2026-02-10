@@ -49,6 +49,7 @@
             animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
+        /* Receipt Modal Styles */
         .receipt-modal {
             position: fixed;
             top: 0;
@@ -61,6 +62,11 @@
             justify-content: center;
             align-items: center;
             backdrop-filter: blur(5px);
+        }
+
+        /* IMPORTANT: This ensures the modal stays hidden by default */
+        .hidden {
+            display: none !important;
         }
 
         .receipt-box {
@@ -185,8 +191,8 @@
 
                     <div id="markPaidContainer"
                         style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-                        <button onclick="handlePaymentAndPrint()"
-                            style="background: #e53935; width: 100%; padding: 12px; border-radius: 8px; font-weight: 600;">
+                        <button id="markPaidBtn" onclick="handlePaymentAndPrint()"
+                            style="background: #e53935; width: 100%; padding: 12px; border-radius: 8px; font-weight: 600; color: white; border: none; cursor: pointer;">
                             <i class="fas fa-check-circle"></i> Confirm Payment Received
                         </button>
                         <p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 8px;">
@@ -257,6 +263,7 @@
             const actionButtons = document.getElementById('actionButtons');
             const qrSection = document.getElementById('qrSection');
 
+            // Reset UI
             resultSection.classList.add('hidden');
             document.getElementById('errorMsg').classList.add('hidden');
             qrSection.classList.add('hidden');
@@ -312,6 +319,7 @@
 
                 if (allPaid) {
                     // If everything is paid, show Receipt button
+                    // NOTE: This onclick will trigger the modal ONLY when clicked
                     actionButtons.innerHTML = `
                         <button onclick='showReceipt(${JSON.stringify(paidUsersForReceipt)}, ${paidAmount})' class="view-receipt-btn">
                             <i class="fas fa-file-invoice"></i> View & Download Receipt
@@ -359,6 +367,11 @@
         async function handlePaymentAndPrint() {
             if (!confirm(`Confirm that you have received ₹${TOTAL_AMOUNT}?`)) return;
 
+            const btn = document.getElementById('markPaidBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+
             const mobile = document.getElementById('mobileInput').value;
 
             try {
@@ -376,15 +389,11 @@
                     })
                 ));
 
-                // 3. Refresh and Show Receipt
-                await searchUser(); // This will update UI to "Paid" state
+                // 3. Refresh UI to show "Paid" state (This will hide QR and show Receipt Button)
+                await searchUser();
 
-                // Calculate paid amount for receipt
-                let totalPaid = 0;
-                users.forEach(u => totalPaid += (TSHIRT_PRICE > 0 ? TSHIRT_PRICE : u.amount));
-
-                // Show receipt immediately
-                showReceipt(users, totalPaid);
+                // IMPORTANT: Removed showReceipt() call here to stop auto pop-up.
+                // The user can now click the "View & Download Receipt" button manually.
 
             } catch (e) {
                 alert('Error updating payment.');
@@ -392,7 +401,8 @@
         }
 
         function showReceipt(users, totalAmount) {
-            document.getElementById('receiptDate').innerText = new Date().toLocaleDateString('en-IN');
+            const date = new Date().toLocaleDateString('en-IN');
+            document.getElementById('receiptDate').innerText = date;
             document.getElementById('receiptNames').innerHTML = users.map(u => `<div>${u.fullName} (${u.tshirtName})</div>`).join('');
             document.getElementById('receiptAmount').innerText = `₹${totalAmount}`;
             document.getElementById('receiptModal').classList.remove('hidden');
