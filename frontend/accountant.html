@@ -14,11 +14,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
-        /* Special Style for Accountant Page */
+        /* Main Page Styles */
         body {
             background-color: #1a1a2e;
             border-top: 5px solid #ff9f43;
-            font-family: 'Poppins', 'Noto Sans Gujarati', sans-serif;
+            font-family: 'Poppins', sans-serif;
         }
 
         .hero-section h1 {
@@ -97,17 +97,21 @@
             font-weight: bold;
         }
 
-        /* --- UPDATED RECEIPT DESIGN (GUJARATI STYLE) --- */
+        /* --- PDF RECEIPT TEMPLATE (IMPORTANT FIX) --- */
         #receipt-template {
+            /* Fix for Blank PDF: Place it behind the main content instead of off-screen */
             position: absolute;
-            left: -9999px;
-            width: 500px;
-            /* Wider for better look */
+            top: 0;
+            left: 0;
+            z-index: -100;
+            /* Behind everything */
+
+            width: 550px;
+            /* Fixed width for PDF */
             background: #fff;
             padding: 30px;
             color: #000;
             font-family: 'Noto Sans Gujarati', sans-serif;
-            /* Gujarati Font */
             border: 2px solid #000;
         }
 
@@ -125,7 +129,7 @@
         }
 
         .rec-main-title {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: bold;
             color: #d32f2f;
             margin: 5px 0;
@@ -179,20 +183,23 @@
 
         .rec-sign-area {
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .signature-img {
             height: 60px;
-            /* Adjust signature size */
+            width: auto;
             display: block;
-            margin: 0 auto;
+            margin-bottom: 5px;
         }
 
         .sign-label {
             border-top: 1px solid #000;
             padding-top: 5px;
             font-size: 14px;
-            margin-top: 5px;
+            width: 150px;
         }
     </style>
 </head>
@@ -271,7 +278,7 @@
         </div>
 
         <div class="rec-footer">
-            <div style="font-size: 12px; max-width: 200px;">
+            <div style="font-size: 12px; max-width: 250px;">
                 આપના તરફથી ટી-શર્ટ માટે રકમ મળેલ છે, જેનો સાભાર સ્વીકારવામાં આવેલ છે.
             </div>
             <div class="rec-sign-area">
@@ -383,6 +390,7 @@
                     body: JSON.stringify({ paymentStatus: true })
                 });
 
+                // Generate PDF
                 generateReceiptPDF(encodeURIComponent(JSON.stringify(user)), mode);
                 searchUser();
                 alert("Payment Updated & Receipt Downloading...");
@@ -411,25 +419,26 @@
             const amount = TSHIRT_PRICE > 0 ? TSHIRT_PRICE : user.amount;
             const date = new Date().toLocaleDateString('en-IN');
 
-            // Fill Gujarati Template
+            // Fill Template
             document.getElementById('rec-date').innerText = date;
             document.getElementById('rec-name').innerText = user.fullName;
             document.getElementById('rec-mobile').innerText = user.mobileNumber;
             document.getElementById('rec-size').innerText = user.size;
-            document.getElementById('rec-mode').innerText = mode; // Cash / Online
+            document.getElementById('rec-mode').innerText = mode;
             document.getElementById('rec-amount').innerText = amount;
 
-            const element = document.getElementById('receipt-template');
-
-            const opt = {
-                margin: 10,
-                filename: `Receipt_${user.fullName}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' } // A5 size looks good for this amount of content
-            };
-
-            html2pdf().set(opt).from(element).save();
+            // Wait a moment for images to render
+            setTimeout(() => {
+                const element = document.getElementById('receipt-template');
+                const opt = {
+                    margin: 10,
+                    filename: `Receipt_${user.fullName}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+                    jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' }
+                };
+                html2pdf().set(opt).from(element).save();
+            }, 500);
         }
     </script>
 </body>
