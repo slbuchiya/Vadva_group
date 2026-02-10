@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accountant Panel | Vadva Group</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        /* Accountant Specific Styles */
+        body {
+            background-color: #1a1a2e;
+            border-top: 5px solid #ff9f43;
+        }
+
+        .hero-section h1 {
+            font-size: 2rem;
+            color: #ff9f43;
+            margin-bottom: 5px;
+        }
+
+        .hero-section p {
+            color: #aaa;
+        }
+
+        .card {
+            border-left: 5px solid #ff9f43;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-cash {
+            flex: 1;
+            background: #27ae60;
+            /* Green */
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-upi {
+            flex: 1;
+            background: #2980b9;
+            /* Blue */
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-unpaid {
+            width: 100%;
+            background: #c0392b;
+            /* Red */
+            color: white;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 0.8rem;
+        }
+
+        .status-paid {
+            color: #27ae60;
+            font-weight: bold;
+            border: 1px solid #27ae60;
+            padding: 5px 10px;
+            border-radius: 20px;
+            background: rgba(39, 174, 96, 0.1);
+        }
+
+        .status-pending {
+            color: #e67e22;
+            font-weight: bold;
+            border: 1px solid #e67e22;
+            padding: 5px 10px;
+            border-radius: 20px;
+            background: rgba(230, 126, 34, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header class="hero-section">
+            <div style="font-size: 2.5rem; color: #ff9f43; margin-bottom: 10px;">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <h1>Accountant Panel</h1>
+            <p>Manually Verify Payments</p>
+        </header>
+
+        <div class="search-section">
+            <div class="input-group">
+                <i class="fas fa-search"></i>
+                <input type="tel" id="mobileInput" placeholder="Enter Mobile Number" maxlength="10">
+            </div>
+            <button onclick="searchUser()" style="background: #ff9f43; color: #333; font-weight: bold;">
+                Find User
+            </button>
+        </div>
+
+        <div id="resultSection" class="result-section hidden">
+            <div id="ordersContainer"></div>
+        </div>
+
+        <div id="errorMsg" class="error-msg hidden">
+            <i class="fas fa-exclamation-circle"></i> User not found!
+        </div>
+
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="index.html" style="color: #666; text-decoration: none; font-size: 0.8rem;">
+                <i class="fas fa-arrow-left"></i> Back to User Home
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Update your Backend URL here
+        const BACKEND_URL = 'https://vadva-group-backend-1.onrender.com';
+        let TSHIRT_PRICE = 0;
+
+        // Fetch Price
+        fetch(`${BACKEND_URL}/api/settings`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.tshirtPrice) TSHIRT_PRICE = parseInt(data.tshirtPrice) || 0;
+            });
+
+        async function searchUser() {
+            const mobile = document.getElementById('mobileInput').value;
+            const resultSection = document.getElementById('resultSection');
+            const ordersContainer = document.getElementById('ordersContainer');
+            const errorMsg = document.getElementById('errorMsg');
+
+            resultSection.classList.add('hidden');
+            errorMsg.classList.add('hidden');
+            ordersContainer.innerHTML = '';
+
+            if (!mobile || mobile.length < 10) return alert('Enter valid number');
+
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
+                if (!res.ok) throw new Error();
+                const users = await res.json();
+                if (users.length === 0) throw new Error();
+
+                users.forEach((user, i) => {
+                    const price = TSHIRT_PRICE > 0 ? TSHIRT_PRICE : user.amount;
+
+                    let actionButtons = '';
+                    let statusBadge = '';
+
+                    if (user.paymentStatus) {
+                        // If ALREADY PAID
+                        statusBadge = `<span class="status-paid"><i class="fas fa-check"></i> PAID</span>`;
+                        actionButtons = `
+                            <div style="margin-top:10px; text-align:center;">
+                                <small style="color:#aaa;">Payment Received</small>
+                                <button onclick="markUnpaid('${user._id}')" class="btn-unpaid">
+                                    <i class="fas fa-undo"></i> Mistake? Mark Unpaid
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        // If PENDING
+                        statusBadge = `<span class="status-pending"><i class="fas fa-clock"></i> UNPAID</span>`;
+                        actionButtons = `
+                            <p style="margin-top:10px; font-size:0.8rem; color:#ccc;">Collect Payment via:</p>
+                            <div class="btn-group">
+                                <button onclick="markPaid('${user._id}', 'Cash')" class="btn-cash">
+                                    <i class="fas fa-money-bill-wave"></i> Cash
+                                </button>
+                                <button onclick="markPaid('${user._id}', 'UPI')" class="btn-upi">
+                                    <i class="fas fa-mobile-alt"></i> GPay/UPI
+                                </button>
+                            </div>
+                        `;
+                    }
+
+                    ordersContainer.innerHTML += `
+                        <div class="card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <h2 style="margin:0; font-size:1.1rem; color:#fff;">${user.fullName}</h2>
+                                ${statusBadge}
+                            </div>
+                            <div class="detail-row">
+                                <span>Size: <strong>${user.size}</strong></span>
+                                <span>Amount: <strong style="color:#ff9f43;">₹${price}</strong></span>
+                            </div>
+                            ${actionButtons}
+                        </div>`;
+                });
+
+                resultSection.classList.remove('hidden');
+            } catch (e) {
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        async function markPaid(userId, mode) {
+            if (!confirm(`Confirm receiving payment via ${mode}?`)) return;
+
+            try {
+                // Update status to TRUE
+                await fetch(`${BACKEND_URL}/api/user/${userId}/payment`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ paymentStatus: true })
+                });
+
+                // Refresh list
+                searchUser();
+                // Optional: Alert
+                // alert(`Payment updated via ${mode}`); 
+
+            } catch (e) {
+                alert('Error updating payment');
+            }
+        }
+
+        async function markUnpaid(userId) {
+            if (!confirm(`Are you sure you want to mark this as UNPAID?`)) return;
+
+            try {
+                // Update status to FALSE (Undo)
+                await fetch(`${BACKEND_URL}/api/user/${userId}/payment`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ paymentStatus: false })
+                });
+
+                // Refresh list
+                searchUser();
+
+            } catch (e) {
+                alert('Error updating payment');
+            }
+        }
+    </script>
+</body>
+
+</html>
