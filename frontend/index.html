@@ -406,13 +406,16 @@
 
                 console.log("Scanned Text:", text); // Debugging
 
-                // 3. Validation Logic (Check if Real Screenshot)
-                // - Must contain "success", "paid", or "payment"
+                // 3. Validation Logic (Strict Check)
+                // - Must contain "success", "paid", etc.
                 // - Must contain the exact Amount
 
                 const isSuccess = text.includes('success') || text.includes('paid') || text.includes('completed') || text.includes('done') || text.includes('successful');
+
+                // રકમ ચેક કરવી (Amount check)
                 const amountStr = TOTAL_AMOUNT.toString();
-                const amountFound = text.includes(amountStr) || text.includes(amountStr + '.00');
+                // આપણે ખાલી નંબર (500) અથવા પોઈન્ટ સાથે (500.00) અથવા રૂ (₹500) ચેક કરીએ
+                const amountFound = text.includes(amountStr) || text.includes(amountStr + '.00') || text.includes(amountStr + ' .00');
 
                 if (isSuccess && amountFound) {
                     status.innerHTML = '<i class="fas fa-check-circle"></i> Verified! Updating Database...';
@@ -422,7 +425,8 @@
                     await updateDatabaseAsPaid();
 
                 } else {
-                    status.innerHTML = '<i class="fas fa-times-circle"></i> Verification Failed.<br>Screenshot must show "Success" & Amount ₹' + TOTAL_AMOUNT;
+                    status.innerHTML = `<i class="fas fa-times-circle"></i> Verification Failed.<br>
+                                        Screenshot must show "Success" & Amount ₹${TOTAL_AMOUNT}`;
                     status.style.color = "#e53935";
                 }
 
