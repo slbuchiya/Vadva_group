@@ -13,7 +13,7 @@
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 
     <style>
-        /* Base Styles - Same as before */
+        /* Base Styles */
         body {
             background-color: #1e1e2f;
         }
@@ -377,45 +377,93 @@
             }
         }
 
-        // --- ENHANCED VERIFICATION LOGIC ---
+        // --- NEW HELPER: Pre-process Image for Dark Mode ---
+        function preprocessImage(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+
+                    // Check brightness to detect Dark Mode
+                    let totalBrightness = 0;
+                    for (let i = 0; i < data.length; i += 4) {
+                        // Human eye perception formula
+                        totalBrightness += (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+                    }
+                    const avgBrightness = totalBrightness / (data.length / 4);
+
+                    // If image is dark (avg brightness < 100), Invert it to make text black on white
+                    if (avgBrightness < 100) {
+                        for (let i = 0; i < data.length; i += 4) {
+                            data[i] = 255 - data[i];     // Red
+                            data[i + 1] = 255 - data[i + 1]; // Green
+                            data[i + 2] = 255 - data[i + 2]; // Blue
+                        }
+                        ctx.putImageData(imageData, 0, 0);
+                    }
+
+                    resolve(canvas.toDataURL('image/png'));
+                };
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        // --- ENHANCED VERIFICATION LOGIC WITH PRE-PROCESSING ---
         async function verifyScreenshot(input) {
             const file = input.files[0];
             if (!file) return;
 
             const status = document.getElementById('ocrStatus');
-            status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing screenshot... (10-20s)';
+            status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing screenshot... (Cleaning Dark Mode...)';
             status.style.color = "#ffb74d";
 
             try {
+                // 1. Pre-process Image (Invert Dark Mode)
+                const processedImageSrc = await preprocessImage(file);
+
                 const worker = await Tesseract.createWorker('eng');
-                const ret = await worker.recognize(file);
+                const ret = await worker.recognize(processedImageSrc);
                 const rawText = ret.data.text.toLowerCase();
+                // Create a "clean" text version without spaces for ID matching
+                const cleanText = rawText.replace(/\s+/g, '');
+
                 await worker.terminate();
 
                 console.log("Scanned Text:", rawText);
 
-                // 1. Status Keywords
-                const keywords = ['success', 'paid', 'completed', 'done', 'successful', 'sent', 'transfer', 'transaction'];
+                // 2. Check Status Keywords
+                const keywords = ['success', 'paid', 'completed', 'done', 'sent', 'transaction'];
                 const isSuccess = keywords.some(word => rawText.includes(word));
 
-                // 2. Amount Check (Strict & Smart)
-                const numbersFound = rawText.match(/(\d+(?:\.\d+)?)/g);
-                let amountFound = false;
-                if (numbersFound) {
-                    amountFound = numbersFound.some(numStr => parseFloat(numStr) === TOTAL_AMOUNT);
-                }
+                // 3. Check Amount (Robust Check)
+                const amountStr = TOTAL_AMOUNT.toString();
+                // Check simple presence
+                let amountFound = rawText.includes(amountStr) || rawText.includes(`₹${amountStr}`) || rawText.includes(amountStr + '.00');
+
+                // If simple check fails, check clean text (e.g. "₹ 700" becomes "₹700")
                 if (!amountFound) {
-                    const cleanText = rawText.replace(/,/g, '');
-                    amountFound = cleanText.includes(TOTAL_AMOUNT.toString());
+                    amountFound = cleanText.includes(amountStr) || cleanText.includes(`₹${amountStr}`);
                 }
 
-                // 3. Receiver UPI ID Check (CRITICAL)
-                const targetUPI = ADMIN_UPI_ID.toLowerCase().trim();
-                const upiHandle = targetUPI.split('@')[0]; // e.g. "buchiyasachin8"
+                // 4. Check Receiver UPI ID (Handle Only)
+                let upiFound = false;
+                let expectedHandle = "";
 
-                // OCR might confuse '@' with 'a' or '©', so we check handle too
-                const upiFound = rawText.includes(targetUPI) || rawText.includes(upiHandle);
+                if (ADMIN_UPI_ID) {
+                    expectedHandle = ADMIN_UPI_ID.toLowerCase().split('@')[0].trim();
+                    upiFound = rawText.includes(expectedHandle) || cleanText.includes(expectedHandle);
+                } else {
+                    upiFound = true; // Bypass check if not configured
+                }
 
+                // --- FINAL DECISION ---
                 if (isSuccess && amountFound && upiFound) {
                     status.innerHTML = '<i class="fas fa-check-circle"></i> Verified! Updating Database...';
                     status.style.color = "#4caf50";
@@ -424,17 +472,18 @@
                     let failReason = "";
                     if (!isSuccess) failReason += "<li>Status 'Completed/Paid' not found.</li>";
                     if (!amountFound) failReason += `<li>Amount ₹${TOTAL_AMOUNT} not found.</li>`;
-                    if (!upiFound) failReason += `<li>Receiver ID (${upiHandle}...) not found.</li>`;
+                    if (!upiFound && ADMIN_UPI_ID) failReason += `<li>Receiver ID '${expectedHandle}' not found.</li>`;
 
-                    status.innerHTML = `<ul style="text-align:left; color:#e53935; font-size:0.8rem; padding-left:15px;">
+                    status.innerHTML = `<ul style="text-align:left; color:#e53935; font-size:0.8rem; padding-left:15px; margin-top:5px;">
                                             <strong>Verification Failed:</strong>
                                             ${failReason}
+                                            <br>Try uploading a clearer screenshot.
                                         </ul>`;
                 }
 
             } catch (e) {
                 console.error(e);
-                status.innerText = "Error scanning image. Try a clearer screenshot.";
+                status.innerText = "Error scanning image. Please try again.";
                 status.style.color = "#e53935";
             }
         }
