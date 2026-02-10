@@ -4,431 +4,531 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | Vadva Group</title>
+    <title>T-Shirt Payment | Vadva Group</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Noto+Sans+Gujarati:wght@400;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
-        /* Admin Specific Styles - kept exactly as provided */
-        .admin-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        /* Base Styles */
+        body {
+            background-color: #1e1e2f;
+            font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
         }
 
-        .refresh-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .refresh-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+        .hero-section {
             margin-bottom: 30px;
         }
 
-        .stat-card {
+        .hero-section h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, #fff, #a5a1ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .input-group input {
+            padding-left: 45px;
+        }
+
+        .result-section {
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .payment-box {
+            margin-top: 20px;
             background: rgba(255, 255, 255, 0.05);
             padding: 20px;
-            border-radius: 15px;
+            border-radius: 10px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             text-align: center;
         }
 
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            margin: 10px 0;
+        .qr-display img {
+            width: 100%;
+            max-width: 220px;
+            border-radius: 10px;
+            border: 5px solid white;
+            margin-bottom: 15px;
         }
 
-        .order-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+        .upload-area {
+            margin-top: 20px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.3);
+            padding-top: 15px;
         }
 
-        .order-item {
-            background: rgba(255, 255, 255, 0.05);
+        .file-input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            color: white;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .status-msg {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        .btn-download {
+            width: 100%;
+            background: #27ae60;
+            color: white;
+            border: none;
             padding: 15px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: transform 0.2s;
-        }
-
-        .order-item:hover {
-            transform: translateY(-2px);
-            background: rgba(255, 255, 255, 0.08);
-        }
-
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
+            font-size: 1.1rem;
+            border-radius: 8px;
             cursor: pointer;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
-        .status-paid {
-            background: rgba(46, 125, 50, 0.2);
-            color: #81c784;
-            border: 1px solid rgba(46, 125, 50, 0.5);
+        /* --- PDF RECEIPT HIDDEN TEMPLATE --- */
+        #receipt-container {
+            position: fixed;
+            top: 0;
+            left: -10000px;
+            /* Hide off-screen */
+            z-index: -100;
         }
 
-        .status-pending {
-            background: rgba(245, 124, 0, 0.2);
-            color: #ffb74d;
-            border: 1px solid rgba(245, 124, 0, 0.5);
+        #receipt-template {
+            width: 550px;
+            /* A5 Width */
+            background: #fff;
+            padding: 30px;
+            color: #000;
+            font-family: 'Noto Sans Gujarati', sans-serif;
+            border: 2px solid #000;
         }
 
-        /* Settings Section */
-        .settings-panel {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-        }
-
-        .settings-group {
+        .rec-header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
             margin-bottom: 20px;
         }
 
-        .settings-group label {
-            display: block;
+        .rec-top-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .rec-main-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #d32f2f;
+            margin: 5px 0;
+        }
+
+        .rec-sub-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .rec-content {
+            margin-top: 20px;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .rec-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 5px;
             margin-bottom: 8px;
-            color: rgba(255, 255, 255, 0.7);
         }
 
-        .file-upload-btn {
-            background: var(--primary-color);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            display: inline-block;
-            font-size: 0.9rem;
+        .rec-label {
+            font-weight: bold;
         }
 
-        .preview-img {
-            max-width: 100px;
-            margin-top: 10px;
-            border-radius: 5px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+        .rec-value {
+            font-weight: bold;
+            color: #000;
+        }
+
+        .rec-total-box {
+            margin-top: 20px;
+            border: 2px solid #000;
+            padding: 10px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            background: #f0f0f0;
+        }
+
+        .rec-footer {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .signature-img {
+            height: 60px;
+            display: block;
+            margin: 0 auto 5px auto;
+        }
+
+        .sign-label {
+            border-top: 1px solid #000;
+            padding-top: 5px;
+            font-size: 14px;
         }
     </style>
 </head>
 
 <body>
-    <div id="pinOverlay"
-        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1e1e2f; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-        <h2 style="margin-bottom: 20px;">Enter Admin PIN</h2>
-        <input type="password" id="pinInput"
-            style="padding: 10px; font-size: 1.2rem; border-radius: 5px; border: none; text-align: center; margin-bottom: 20px; width: 200px;"
-            maxlength="4">
-        <button onclick="checkPin()"
-            style="padding: 10px 30px; font-size: 1rem; background: var(--primary-color); color: white; border: none; border-radius: 5px; cursor: pointer;">Submit</button>
-        <p id="pinError" style="color: #e53935; margin-top: 10px; display: none;">Incorrect PIN</p>
-    </div>
-
-    <div class="container" id="adminContainer" style="filter: blur(5px); pointer-events: none;">
-        <header class="admin-header">
-            <h1 style="font-size: 1.5rem; margin: 0;">Vadva Group Admin</h1>
-            <button class="refresh-btn" onclick="fetchOrders()">
-                <i class="fas fa-sync-alt"></i>
-            </button>
+    <div class="container">
+        <header class="hero-section">
+            <div style="font-size: 3rem; color: var(--primary-color); margin-bottom: 10px;">
+                <i class="fas fa-tshirt"></i>
+            </div>
+            <h1>T-Shirt Payment</h1>
+            <p>Vadva Group Event 2026</p>
         </header>
 
-        <div class="settings-panel">
-            <h3 style="margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
-                <i class="fas fa-cogs"></i> Payment Settings
-            </h3>
+        <div class="search-section">
+            <div class="input-group">
+                <i class="fas fa-mobile-alt"></i>
+                <input type="tel" id="mobileInput" placeholder="Enter Mobile Number" maxlength="10">
+            </div>
+            <button onclick="searchUser()">
+                <i class="fas fa-search"></i> Search Order
+            </button>
+        </div>
 
-            <div class="settings-group">
-                <label>UPI ID (e.g. mobile@upi)</label>
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="upiIdInput" placeholder="Enter UPI ID" style="flex: 1;">
-                    <button onclick="saveUpi()" style="width: auto; padding: 0 20px;">Save</button>
+        <div id="resultSection" class="result-section hidden">
+            <div id="ordersContainer"></div>
+
+            <div class="card total-card">
+                <h2 style="color: #2e7d32;"><i class="fas fa-wallet"></i> Payment Details</h2>
+                <div class="detail-row">
+                    <span>Total Amount:</span>
+                    <strong id="totalAmount" style="font-size: 1.5rem; color: var(--text-dark);">₹0</strong>
                 </div>
-            </div>
 
-            <div class="settings-group">
-                <label>Global Price (Set Amount for ALL Users)</label>
-                <div style="display: flex; gap: 10px;">
-                    <input type="number" id="globalPriceInput" placeholder="Enter Amount" style="flex: 1;">
-                    <button onclick="setGlobalPrice()"
-                        style="width: auto; padding: 0 20px; background: #ff9800; color: black;">Set for All</button>
-                </div>
-            </div>
-
-            <div class="settings-group">
-                <label>Custom QR Code Image</label>
-                <input type="file" id="qrUpload" hidden onchange="uploadQR()">
-                <label for="qrUpload" class="file-upload-btn">
-                    <i class="fas fa-upload"></i> Choose QR Image
-                </label>
-                <div id="qrPreview"></div>
-                <button onclick="removeQR()"
-                    style="background: #e53935; width: auto; margin-top: 10px; padding: 5px 10px; font-size: 0.8rem;">
-                    Remove Custom QR
-                </button>
-            </div>
-
-            <div class="settings-group">
-                <label>Custom Background Image</label>
-                <input type="file" id="bgUpload" hidden onchange="uploadBG()">
-                <label for="bgUpload" class="file-upload-btn" style="background: #4caf50;">
-                    <i class="fas fa-image"></i> Choose Background
-                </label>
-                <div id="bgPreview"></div>
+                <div id="paymentArea"></div>
             </div>
         </div>
 
-        <div class="dashboard-grid">
-            <div class="stat-card">
-                <div style="color: rgba(255,255,255,0.6);">Total Orders</div>
-                <div class="stat-number" id="totalOrders">0</div>
-            </div>
-            <div class="stat-card">
-                <div style="color: rgba(255,255,255,0.6);">Total Amount</div>
-                <div class="stat-number" id="totalRevenue" style="color: #81c784;">₹0</div>
-            </div>
-            <div class="stat-card">
-                <div style="color: rgba(255,255,255,0.6);">Paid / Pending</div>
-                <div class="stat-number" style="font-size: 1.5rem;">
-                    <span style="color: #81c784;" id="paidCount">0</span> /
-                    <span style="color: #ffb74d;" id="pendingCount">0</span>
-                </div>
-            </div>
+        <div id="errorMsg" class="error-msg hidden">
+            <i class="fas fa-exclamation-circle"></i> User not found! Please check the number.
         </div>
 
-        <h3 style="margin-bottom: 20px;">Recent Orders</h3>
-        <div id="adminOrderList" class="order-list">
-            <div style="text-align: center; color: rgba(255,255,255,0.5); padding: 20px;">
-                Loading orders...
-            </div>
-        </div>
-
-        <div style="margin-top: 30px; text-align: center;">
-            <a href="index.html" style="color: rgba(255,255,255,0.4); text-decoration: none;">
-                <i class="fas fa-arrow-left"></i> Back to Payment Page
+        <div
+            style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; display:flex; justify-content:space-between;">
+            <a href="admin.html" style="color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.8rem;">
+                <i class="fas fa-lock"></i> Admin
+            </a>
+            <a href="accountant.html" style="color: #ff9f43; text-decoration: none; font-size: 0.8rem;">
+                <i class="fas fa-user-tie"></i> Volunteer Login
             </a>
         </div>
     </div>
 
+    <div id="receipt-container">
+        <div id="receipt-template">
+            <div class="rec-header">
+                <div class="rec-top-title">|| જય ગોવિંદસુરા દાદા ||</div>
+                <div class="rec-main-title">વડવા કન્યા ટી-શર્ટ માટે રકમ ઉઘરાણી</div>
+                <div class="rec-sub-title">(વડવા કન્યા ગોવિંદસુરા ગ્રુપ)</div>
+            </div>
+
+            <div class="rec-content">
+                <div class="rec-row"><span class="rec-label">નામ (Name):</span><span class="rec-value"
+                        id="rec-name">--</span></div>
+                <div class="rec-row"><span class="rec-label">મોબાઈલ (Mobile):</span><span class="rec-value"
+                        id="rec-mobile">--</span></div>
+                <div class="rec-row"><span class="rec-label">ટી-શર્ટ સાઈઝ (Size):</span><span class="rec-value"
+                        id="rec-size">--</span></div>
+                <div class="rec-row"><span class="rec-label">તારીખ (Date):</span><span class="rec-value"
+                        id="rec-date">--</span></div>
+                <div class="rec-row"><span class="rec-label">પેમેન્ટ મોડ (Mode):</span><span class="rec-value"
+                        id="rec-mode">--</span></div>
+            </div>
+
+            <div class="rec-total-box">
+                કુલ રકમ: ₹<span id="rec-amount">0</span>
+            </div>
+
+            <div class="rec-footer">
+                <div style="font-size: 12px; max-width: 250px;">
+                    આપના તરફથી ટી-શર્ટ માટે રકમ મળેલ છે, જેનો સાભાર સ્વીકારવામાં આવેલ છે.
+                </div>
+                <div style="text-align: center;">
+                    <img src="sign.jpeg" class="signature-img" alt="Signature">
+                    <div class="sign-label">નાણાં વસુલ કરનારની સહી</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Render Backend URL
         const BACKEND_URL = 'https://vadva-group-backend-1.onrender.com';
+        let CUSTOM_QR = '';
+        let TSHIRT_PRICE = 0;
+        let TOTAL_AMOUNT = 0;
+        let ADMIN_UPI_ID = '';
+        let CURRENT_USER_DATA = null; // Store for PDF
 
-        function checkPin() {
-            const pin = document.getElementById('pinInput').value;
-            if (pin === '1966') {
-                document.getElementById('pinOverlay').style.display = 'none';
-                const container = document.getElementById('adminContainer');
-                container.style.filter = 'none';
-                container.style.pointerEvents = 'all';
-
-                // Load data only after PIN check
-                fetchSettings();
-                fetchOrders();
-            } else {
-                document.getElementById('pinError').style.display = 'block';
-            }
-        }
-
-        function fetchSettings() {
-            fetch(`${BACKEND_URL}/api/settings`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.upiId) {
-                        document.getElementById('upiIdInput').value = data.upiId;
-                    }
-                    if (data.tshirtPrice) {
-                        document.getElementById('globalPriceInput').value = data.tshirtPrice;
-                    }
-                    if (data.qrImage) {
-                        const qrUrl = data.qrImage.startsWith('http') ? data.qrImage : `${BACKEND_URL}${data.qrImage}`;
-                        document.getElementById('qrPreview').innerHTML = `<img src="${qrUrl}" class="preview-img">`;
-                    }
-                    if (data.bgImage) {
-                        const bgUrl = data.bgImage.startsWith('http') ? data.bgImage : `${BACKEND_URL}${data.bgImage}`;
-                        document.getElementById('bgPreview').innerHTML = `<img src="${bgUrl}" class="preview-img">`;
-                    }
-                });
-        }
-
-        function saveUpi() {
-            const upiId = document.getElementById('upiIdInput').value;
-            fetch(`${BACKEND_URL}/api/settings/upi`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ upiId })
-            })
-                .then(res => res.json())
-                .then(data => alert('UPI ID Updated!'))
-                .catch(err => alert('Error updating UPI'));
-        }
-
-        // Updated: Correct API Endpoint for Price
-        function setGlobalPrice() {
-            const price = document.getElementById('globalPriceInput').value;
-            if (!price) return alert('Please enter an amount');
-
-            if (confirm(`Set global price to ₹${price}? This will update calculation for all users.`)) {
-                fetch(`${BACKEND_URL}/api/settings/price`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ price })
-                })
-                    .then(res => res.json())
-                    .then(data => {
-                        alert(data.message);
-                        fetchOrders(); // Refresh list to show new prices
-                    })
-                    .catch(err => alert('Error updating price'));
-            }
-        }
-
-        function uploadQR() {
-            const file = document.getElementById('qrUpload').files[0];
-            if (!file) return;
-
-            const formData = new FormData();
-            formData.append('qrImage', file);
-
-            fetch(`${BACKEND_URL}/api/settings/qr`, {
-                method: 'POST',
-                body: formData
-            })
-                .then(res => res.json())
-                .then(data => {
-                    alert('QR Image Uploaded');
-                    fetchSettings();
-                })
-                .catch(err => alert('Upload failed'));
-        }
-
-        function removeQR() {
-            if (confirm('Remove custom QR?')) {
-                fetch(`${BACKEND_URL}/api/settings/qr`, { method: 'DELETE' })
-                    .then(res => res.json())
-                    .then(() => {
-                        document.getElementById('qrPreview').innerHTML = '';
-                        alert('Custom QR Removed');
-                    });
-            }
-        }
-
-        function uploadBG() {
-            const file = document.getElementById('bgUpload').files[0];
-            if (!file) return;
-
-            const formData = new FormData();
-            formData.append('bgImage', file);
-
-            fetch(`${BACKEND_URL}/api/settings/bg`, {
-                method: 'POST',
-                body: formData
-            })
-                .then(res => res.json())
-                .then(data => {
-                    alert('Background Updated');
-                    fetchSettings();
-                })
-                .catch(err => alert('Upload failed'));
-        }
-
-        // Updated: Uses Global Price for Calculation
-        async function fetchOrders() {
-            const list = document.getElementById('adminOrderList');
-            try {
-                // 1. Get Settings first (to get current Price)
-                const settingsRes = await fetch(`${BACKEND_URL}/api/settings`);
-                const settings = await settingsRes.json();
-                const currentPrice = parseInt(settings.tshirtPrice) || 0;
-
-                // 2. Get Users
-                const res = await fetch(`${BACKEND_URL}/api/users`);
-                const users = await res.json();
-
-                if (users.length === 0) {
-                    list.innerHTML = '<div style="text-align: center; padding: 20px;">No orders found</div>';
-                    return;
+        // Fetch Settings
+        fetch(`${BACKEND_URL}/api/settings`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.tshirtPrice) TSHIRT_PRICE = parseInt(data.tshirtPrice) || 0;
+                if (data.upiId) ADMIN_UPI_ID = data.upiId;
+                if (data.qrImage) CUSTOM_QR = data.qrImage.startsWith('http') ? data.qrImage : `${BACKEND_URL}${data.qrImage}`;
+                if (data.bgImage) {
+                    const bgUrl = data.bgImage.startsWith('http') ? data.bgImage : `${BACKEND_URL}${data.bgImage}`;
+                    document.body.style.backgroundImage = `url('${bgUrl}')`;
                 }
+            });
 
-                let totalAmt = 0;
-                let paid = 0;
-                let pending = 0;
+        async function searchUser() {
+            const mobile = document.getElementById('mobileInput').value;
+            const resultSection = document.getElementById('resultSection');
+            const ordersContainer = document.getElementById('ordersContainer');
+            const paymentArea = document.getElementById('paymentArea');
+            const errorMsg = document.getElementById('errorMsg');
 
-                let html = '';
-                users.forEach(user => {
-                    // Use Global Price instead of user.amount
-                    const amountToDisplay = currentPrice;
-                    totalAmt += amountToDisplay;
+            resultSection.classList.add('hidden');
+            errorMsg.classList.add('hidden');
+            ordersContainer.innerHTML = '';
+            paymentArea.innerHTML = '';
+            TOTAL_AMOUNT = 0;
 
-                    if (user.paymentStatus) paid++; else pending++;
+            if (!mobile || mobile.length < 10) return alert('Enter valid number');
 
-                    const statusClass = user.paymentStatus ? 'status-paid' : 'status-pending';
-                    const statusText = user.paymentStatus ? 'PAID' : 'PENDING';
+            const btn = document.querySelector('button[onclick="searchUser()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+            btn.disabled = true;
 
-                    html += `
-                        <div class="order-item">
-                            <div>
-                                <div style="font-weight: 600; font-size: 1.1rem;">${user.fullName}</div>
-                                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-top: 4px;">
-                                    <i class="fas fa-mobile-alt"></i> ${user.mobile} | 
-                                    <span style="color: var(--primary-color);">${user.tshirtName} (${user.size})</span>
-                                </div>
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
+                if (!res.ok) throw new Error();
+                const users = await res.json();
+                if (users.length === 0) throw new Error();
+
+                let allPaid = true;
+
+                // For simplicity, we assume single user per mobile for receipt generation logic currently
+                // or handle the first one. If multiple, loop handles display.
+                // We'll store the LAST paid user found for PDF generation button
+
+                users.forEach((user, i) => {
+                    const price = TSHIRT_PRICE > 0 ? TSHIRT_PRICE : user.amount;
+                    TOTAL_AMOUNT += price;
+
+                    if (!user.paymentStatus) allPaid = false;
+                    else CURRENT_USER_DATA = user; // Store for PDF
+
+                    const badge = user.paymentStatus
+                        ? '<span style="background:#e8f5e9; color:#2e7d32; padding:2px 6px; border-radius:4px; font-size:0.7rem;">PAID</span>'
+                        : '<span style="background:#fff3e0; color:#ef6c00; padding:2px 6px; border-radius:4px; font-size:0.7rem;">PENDING</span>';
+
+                    ordersContainer.innerHTML += `
+                        <div class="card" style="animation-delay: ${i * 0.1}s">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                                <h2 style="margin:0; font-size:1.2rem; color:var(--primary-color);">Order #${i + 1}</h2>
+                                ${badge}
                             </div>
-                            <div style="text-align: right;">
-                                <div style="font-size: 1.2rem; font-weight: 700; margin-bottom: 5px;">₹${amountToDisplay}</div>
-                                <span class="status-badge ${statusClass}" onclick="toggleStatus('${user._id}', ${user.paymentStatus})">
-                                    ${statusText} <i class="fas fa-sync-alt" style="font-size: 0.7rem; margin-left: 5px;"></i>
-                                </span>
+                            <div class="detail-row"><span>Name:</span><strong>${user.fullName}</strong></div>
+                            <div class="detail-row" style="border-bottom:none;"><span>Amount:</span><strong>₹${price}</strong></div>
+                        </div>`;
+                });
+
+                document.getElementById('totalAmount').textContent = `₹${TOTAL_AMOUNT}`;
+
+                if (allPaid) {
+                    // --- CASE 1: PAID -> SHOW DOWNLOAD BUTTON ---
+                    paymentArea.innerHTML = `
+                        <div style="text-align:center;">
+                            <i class="fas fa-check-circle" style="font-size: 3rem; color: #27ae60; margin-bottom:10px;"></i>
+                            <h3 style="color: #27ae60;">Payment Successful!</h3>
+                            <p style="color: #ccc; font-size: 0.9rem;">Your payment has been verified.</p>
+                            
+                            <button onclick="downloadReceipt()" class="btn-download">
+                                <i class="fas fa-file-pdf"></i> Download Receipt
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    // --- CASE 2: UNPAID -> SHOW QR & UPLOAD ---
+                    let qrHtml = CUSTOM_QR ?
+                        `<div class="qr-display">
+                            <p style="margin-bottom:10px; color:#fff;">Scan this QR to Pay:</p>
+                            <img src="${CUSTOM_QR}" alt="Payment QR">
+                         </div>` :
+                        `<p style="color:#ffb74d;">No QR Code uploaded by Admin.</p>`;
+
+                    paymentArea.innerHTML = `
+                        <div class="payment-box">
+                            ${qrHtml}
+                            <div class="upload-area">
+                                <p style="text-align:left; color:#a5a1ff; font-size:0.9rem; margin-bottom:5px;">
+                                    <i class="fas fa-upload"></i> <strong>Verification Required:</strong>
+                                </p>
+                                <p style="text-align:left; font-size:0.8rem; color:#ccc; margin-bottom:10px;">
+                                    Upload payment screenshot to verify & get receipt.
+                                </p>
+                                <input type="file" id="screenshotInput" accept="image/*" class="file-input" onchange="verifyScreenshot(this)">
+                                <div id="ocrStatus" class="status-msg" style="color:#aaa;">Waiting for upload...</div>
                             </div>
                         </div>
                     `;
-                });
+                }
 
-                list.innerHTML = html;
-                document.getElementById('totalOrders').textContent = users.length;
-                document.getElementById('totalRevenue').textContent = '₹' + totalAmt;
-                document.getElementById('paidCount').textContent = paid;
-                document.getElementById('pendingCount').textContent = pending;
-
-            } catch (error) {
-                list.innerHTML = '<div style="text-align: center; color: #e53935;">Failed to load orders</div>';
+                resultSection.classList.remove('hidden');
+            } catch (e) {
+                errorMsg.classList.remove('hidden');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             }
         }
 
-        function toggleStatus(userId, currentStatus) {
-            const newStatus = !currentStatus;
-            fetch(`${BACKEND_URL}/api/user/${userId}/payment`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ paymentStatus: newStatus })
-            })
-                .then(res => res.json())
-                .then(() => {
-                    fetchOrders(); // Refresh list
-                })
-                .catch(err => alert('Failed to update status'));
+        // --- PDF DOWNLOAD FUNCTION ---
+        function downloadReceipt() {
+            if (!CURRENT_USER_DATA) return alert("User data not found for receipt.");
+
+            const user = CURRENT_USER_DATA;
+            const amount = TSHIRT_PRICE > 0 ? TSHIRT_PRICE : user.amount;
+            const date = new Date().toLocaleDateString('en-IN');
+
+            // Fill Hidden Template
+            document.getElementById('rec-date').innerText = date;
+            document.getElementById('rec-name').innerText = user.fullName;
+            document.getElementById('rec-mobile').innerText = user.mobileNumber || document.getElementById('mobileInput').value;
+            document.getElementById('rec-size').innerText = user.size;
+            document.getElementById('rec-mode').innerText = "Online/Verified";
+            document.getElementById('rec-amount').innerText = amount;
+
+            const element = document.getElementById('receipt-template');
+            const opt = {
+                margin: 0,
+                filename: `Receipt_${user.fullName}.pdf`,
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // --- OCR & VERIFICATION LOGIC (Same as before) ---
+        function preprocessImage(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1500;
+                    const scaleSize = MAX_WIDTH / img.width;
+                    if (scaleSize < 1) {
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                    } else {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                    }
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
+                };
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        async function verifyScreenshot(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const status = document.getElementById('ocrStatus');
+            status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            status.style.color = "#ffb74d";
+
+            try {
+                const processedImgSrc = await preprocessImage(file);
+                const worker = await Tesseract.createWorker('eng');
+                const ret = await worker.recognize(processedImgSrc);
+                const rawText = ret.data.text.toLowerCase();
+                const cleanText = rawText.replace(/\s+/g, '');
+                await worker.terminate();
+
+                const isSuccess = ['success', 'paid', 'completed', 'done'].some(w => rawText.includes(w));
+                const amountStr = TOTAL_AMOUNT.toString();
+                const amountFound = rawText.replace(/,/g, '').includes(amountStr);
+
+                let upiFound = true;
+                if (ADMIN_UPI_ID) {
+                    const handle = ADMIN_UPI_ID.toLowerCase().split('@')[0];
+                    upiFound = rawText.includes(handle) || cleanText.includes(handle);
+                }
+
+                if (isSuccess && amountFound && upiFound) {
+                    status.innerHTML = '<i class="fas fa-check-circle"></i> Verified!';
+                    status.style.color = "#4caf50";
+                    await updateDatabaseAsPaid();
+                } else {
+                    status.innerHTML = "Verification Failed. Check screenshot details.";
+                    status.style.color = "#e53935";
+                }
+            } catch (e) {
+                status.innerText = "Error scanning image.";
+            }
+        }
+
+        async function updateDatabaseAsPaid() {
+            const mobile = document.getElementById('mobileInput').value;
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
+                const users = await res.json();
+                const unpaid = users.filter(u => !u.paymentStatus);
+                await Promise.all(unpaid.map(u =>
+                    fetch(`${BACKEND_URL}/api/user/${u._id}/payment`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentStatus: true })
+                    })
+                ));
+                searchUser(); // Will now show the download button
+                alert("Payment Verified! You can now download the receipt.");
+            } catch (e) { alert('Update failed'); }
         }
     </script>
 </body>
