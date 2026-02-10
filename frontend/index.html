@@ -445,14 +445,6 @@
                 const keywords = ['success', 'paid', 'completed', 'done', 'sent', 'transaction'];
                 const isSuccess = keywords.some(word => rawText.includes(word));
 
-                // 2. Amount Check (Simplified - Only Number)
-                // Remove everything that is NOT a number, then check if 700 exists
-                const amountStr = TOTAL_AMOUNT.toString();
-                // We check if "700" is present anywhere in the text.
-                // We remove commas just in case (1,000 -> 1000)
-                const textWithoutCommas = rawText.replace(/,/g, '');
-                const amountFound = textWithoutCommas.includes(amountStr);
-
                 // 3. Receiver UPI ID Check (Handle Only)
                 let upiFound = false;
                 let expectedHandle = "";
