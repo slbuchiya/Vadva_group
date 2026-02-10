@@ -136,7 +136,19 @@
 </head>
 
 <body>
-    <div class="container">
+    <!-- PIN Overlay -->
+    <div id="pinOverlay"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1e1e2f; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <h2 style="margin-bottom: 20px;">Enter Admin PIN</h2>
+        <input type="password" id="pinInput"
+            style="padding: 10px; font-size: 1.2rem; border-radius: 5px; border: none; text-align: center; margin-bottom: 20px; width: 200px;"
+            maxlength="4">
+        <button onclick="checkPin()"
+            style="padding: 10px 30px; font-size: 1rem; background: var(--primary-color); color: white; border: none; border-radius: 5px; cursor: pointer;">Submit</button>
+        <p id="pinError" style="color: #e53935; margin-top: 10px; display: none;">Incorrect PIN</p>
+    </div>
+
+    <div class="container" id="adminContainer" style="filter: blur(5px); pointer-events: none;">
         <header class="admin-header">
             <h1 style="font-size: 1.5rem; margin: 0;">Vadva Group Admin</h1>
             <button class="refresh-btn" onclick="fetchOrders()">
@@ -216,9 +228,25 @@
         // Render Backend URL (આ ખાસ ઉમેરવું)
         const BACKEND_URL = 'https://vadva-group-backend-1.onrender.com';
 
-        // Load data on start
-        fetchSettings();
-        fetchOrders();
+        // Initialize
+        // fetchSettings(); // Moved to checkPin
+        // fetchOrders();   // Moved to checkPin
+
+        function checkPin() {
+            const pin = document.getElementById('pinInput').value;
+            if (pin === '1966') {
+                document.getElementById('pinOverlay').style.display = 'none';
+                const container = document.getElementById('adminContainer');
+                container.style.filter = 'none';
+                container.style.pointerEvents = 'all';
+
+                // Load data only after PIN check
+                fetchSettings();
+                fetchOrders();
+            } else {
+                document.getElementById('pinError').style.display = 'block';
+            }
+        }
 
         function fetchSettings() {
             // સુધારો 1: Render URL વાપરો
