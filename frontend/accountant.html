@@ -97,17 +97,15 @@
             font-weight: bold;
         }
 
-        /* --- PDF RECEIPT TEMPLATE (IMPORTANT FIX) --- */
+        /* --- PDF RECEIPT TEMPLATE (HIDDEN FROM VIEW) --- */
         #receipt-template {
-            /* Fix for Blank PDF: Place it behind the main content instead of off-screen */
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: -100;
-            /* Behind everything */
+            /* This moves the receipt off the screen so the user doesn't see it, 
+               but the PDF generator can still find it. */
+            position: fixed;
+            top: -10000px;
+            left: -10000px;
 
             width: 550px;
-            /* Fixed width for PDF */
             background: #fff;
             padding: 30px;
             color: #000;
@@ -427,7 +425,7 @@
             document.getElementById('rec-mode').innerText = mode;
             document.getElementById('rec-amount').innerText = amount;
 
-            // Wait a moment for images to render
+            // Wait a moment for images to render then print
             setTimeout(() => {
                 const element = document.getElementById('receipt-template');
                 const opt = {
