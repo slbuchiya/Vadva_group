@@ -349,10 +349,23 @@
 
                 document.getElementById('totalAmount').textContent = `₹${TOTAL_AMOUNT}`;
 
-                // REMOVED: Receipt Button is no longer shown here. 
-                // It will only appear after checking "Mark as Paid & Print"
+                // Show Receipt Button if there are paid users
                 const receiptBtnContainer = document.getElementById('receiptBtnContainer');
-                if (receiptBtnContainer) receiptBtnContainer.remove();
+                if (receiptBtnContainer) receiptBtnContainer.remove(); // Clean up previous
+
+                if (paidUsers.length > 0) {
+                    const btnDiv = document.createElement('div');
+                    btnDiv.id = 'receiptBtnContainer';
+                    btnDiv.style.marginTop = '20px';
+                    btnDiv.innerHTML = `
+                        <button onclick='showReceipt(${JSON.stringify(paidUsers)}, ${paidAmount})' style="background: #2e7d32;">
+                            <i class="fas fa-file-invoice"></i> Download Receipt
+                        </button>
+                    `;
+                    // Insert before the payment card
+                    const totalCard = document.querySelector('.total-card');
+                    totalCard.parentNode.insertBefore(btnDiv, totalCard);
+                }
 
                 resultSection.classList.remove('hidden');
             } catch (error) {
@@ -396,16 +409,16 @@
             document.getElementById('upiLink').href = upiUrl;
             document.getElementById('upiIdDisplay').textContent = UPI_ID;
 
-            // Add "Mark as Paid & Print" button if not already present
+            // Add "Confirm Payment Received" button if not already present
             if (!document.getElementById('markPaidBtn')) {
                 const btnDiv = document.createElement('div');
                 btnDiv.id = 'markPaidContainer';
                 btnDiv.style.marginTop = '20px';
                 btnDiv.innerHTML = `
                     <button id="markPaidBtn" onclick="handlePaymentAndPrint()" style="background: #e53935; width: 100%;">
-                        <i class="fas fa-check-double"></i> Mark as Paid & Print
+                        <i class="fas fa-check-circle"></i> Confirm Payment Received
                     </button>
-                    <p style="font-size: 0.8rem; color: #aaa; margin-top: 5px;">(Use this after receiving payment)</p>
+                    <p style="font-size: 0.8rem; color: #aaa; margin-top: 5px;">(Click this ONLY after receiving money)</p>
                 `;
                 qrSection.appendChild(btnDiv);
             }
