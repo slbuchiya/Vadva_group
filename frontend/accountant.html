@@ -19,6 +19,7 @@
             background-color: #1a1a2e;
             border-top: 5px solid #ff9f43;
             font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
         }
 
         .hero-section h1 {
@@ -97,52 +98,57 @@
             font-weight: bold;
         }
 
-        /* --- PDF RECEIPT TEMPLATE (HIDDEN FROM VIEW) --- */
-        #receipt-template {
-            /* This moves the receipt off the screen so the user doesn't see it, 
-               but the PDF generator can still find it. */
-            position: fixed;
-            top: -10000px;
-            left: -10000px;
+        /* --- PDF RECEIPT HIDDEN CONTAINER --- */
+        #receipt-container {
+            position: absolute;
+            top: 0;
+            left: -9999px;
+            /* Moves it off-screen so user can't see it */
+            z-index: -1;
+        }
 
-            width: 550px;
-            background: #fff;
-            padding: 30px;
-            color: #000;
+        #receipt-template {
+            width: 580px;
+            /* Fixed width for PDF A5 size */
+            background: #ffffff;
+            padding: 40px;
+            color: #000000;
             font-family: 'Noto Sans Gujarati', sans-serif;
-            border: 2px solid #000;
+            border: 2px solid #333;
         }
 
         .rec-header {
             text-align: center;
             border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
         }
 
         .rec-top-title {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: bold;
             margin-bottom: 5px;
+            color: #555;
         }
 
         .rec-main-title {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
             color: #d32f2f;
             margin: 5px 0;
         }
 
         .rec-sub-title {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
             margin-top: 5px;
+            color: #333;
         }
 
         .rec-content {
             margin-top: 20px;
-            font-size: 16px;
-            line-height: 1.8;
+            font-size: 18px;
+            line-height: 2;
         }
 
         .rec-row {
@@ -155,6 +161,7 @@
 
         .rec-label {
             font-weight: bold;
+            color: #444;
         }
 
         .rec-value {
@@ -163,17 +170,17 @@
         }
 
         .rec-total-box {
-            margin-top: 20px;
+            margin-top: 30px;
             border: 2px solid #000;
-            padding: 10px;
+            padding: 15px;
             text-align: center;
-            font-size: 18px;
+            font-size: 22px;
             font-weight: bold;
-            background: #f0f0f0;
+            background: #f8f8f8;
         }
 
         .rec-footer {
-            margin-top: 40px;
+            margin-top: 50px;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
@@ -187,7 +194,7 @@
         }
 
         .signature-img {
-            height: 60px;
+            height: 70px;
             width: auto;
             display: block;
             margin-bottom: 5px;
@@ -197,7 +204,7 @@
             border-top: 1px solid #000;
             padding-top: 5px;
             font-size: 14px;
-            width: 150px;
+            width: 180px;
         }
     </style>
 </head>
@@ -241,47 +248,49 @@
         </div>
     </div>
 
-    <div id="receipt-template">
-        <div class="rec-header">
-            <div class="rec-top-title">|| જય ગોવિંદસુરા દાદા ||</div>
-            <div class="rec-main-title">વડવા કન્યા ટી-શર્ટ માટે રકમ ઉઘરાણી</div>
-            <div class="rec-sub-title">(વડવા કન્યા ગોવિંદસુરા ગ્રુપ)</div>
-        </div>
+    <div id="receipt-container">
+        <div id="receipt-template">
+            <div class="rec-header">
+                <div class="rec-top-title">|| જય ગોવિંદસુરા દાદા ||</div>
+                <div class="rec-main-title">વડવા કન્યા ટી-શર્ટ માટે રકમ ઉઘરાણી</div>
+                <div class="rec-sub-title">(વડવા કન્યા ગોવિંદસુરા ગ્રુપ)</div>
+            </div>
 
-        <div class="rec-content">
-            <div class="rec-row">
-                <span class="rec-label">નામ (Name):</span>
-                <span class="rec-value" id="rec-name">--</span>
+            <div class="rec-content">
+                <div class="rec-row">
+                    <span class="rec-label">નામ (Name):</span>
+                    <span class="rec-value" id="rec-name">--</span>
+                </div>
+                <div class="rec-row">
+                    <span class="rec-label">મોબાઈલ (Mobile):</span>
+                    <span class="rec-value" id="rec-mobile">--</span>
+                </div>
+                <div class="rec-row">
+                    <span class="rec-label">ટી-શર્ટ સાઈઝ (Size):</span>
+                    <span class="rec-value" id="rec-size">--</span>
+                </div>
+                <div class="rec-row">
+                    <span class="rec-label">તારીખ (Date):</span>
+                    <span class="rec-value" id="rec-date">--</span>
+                </div>
+                <div class="rec-row">
+                    <span class="rec-label">પેમેન્ટ મોડ (Mode):</span>
+                    <span class="rec-value" id="rec-mode">--</span>
+                </div>
             </div>
-            <div class="rec-row">
-                <span class="rec-label">મોબાઈલ (Mobile):</span>
-                <span class="rec-value" id="rec-mobile">--</span>
-            </div>
-            <div class="rec-row">
-                <span class="rec-label">ટી-શર્ટ સાઈઝ (Size):</span>
-                <span class="rec-value" id="rec-size">--</span>
-            </div>
-            <div class="rec-row">
-                <span class="rec-label">તારીખ (Date):</span>
-                <span class="rec-value" id="rec-date">--</span>
-            </div>
-            <div class="rec-row">
-                <span class="rec-label">પેમેન્ટ મોડ (Mode):</span>
-                <span class="rec-value" id="rec-mode">--</span>
-            </div>
-        </div>
 
-        <div class="rec-total-box">
-            કુલ રકમ: ₹<span id="rec-amount">0</span>
-        </div>
-
-        <div class="rec-footer">
-            <div style="font-size: 12px; max-width: 250px;">
-                આપના તરફથી ટી-શર્ટ માટે રકમ મળેલ છે, જેનો સાભાર સ્વીકારવામાં આવેલ છે.
+            <div class="rec-total-box">
+                કુલ રકમ: ₹<span id="rec-amount">0</span>
             </div>
-            <div class="rec-sign-area">
-                <img src="sign.jpeg" class="signature-img" alt="Signature">
-                <div class="sign-label">નાણાં વસુલ કરનારની સહી</div>
+
+            <div class="rec-footer">
+                <div style="font-size: 14px; max-width: 250px;">
+                    આપના તરફથી ટી-શર્ટ માટે રકમ મળેલ છે, જેનો સાભાર સ્વીકારવામાં આવેલ છે.
+                </div>
+                <div class="rec-sign-area">
+                    <img src="sign.jpeg" class="signature-img" alt="Signature">
+                    <div class="sign-label">નાણાં વસુલ કરનારની સહી</div>
+                </div>
             </div>
         </div>
     </div>
@@ -378,67 +387,3 @@
         async function markPaid(userId, mode, userString) {
             const user = JSON.parse(decodeURIComponent(userString));
             const amount = TSHIRT_PRICE > 0 ? TSHIRT_PRICE : user.amount;
-
-            if (!confirm(`Confirm receiving ₹${amount} via ${mode}?`)) return;
-
-            try {
-                await fetch(`${BACKEND_URL}/api/user/${userId}/payment`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ paymentStatus: true })
-                });
-
-                // Generate PDF
-                generateReceiptPDF(encodeURIComponent(JSON.stringify(user)), mode);
-                searchUser();
-                alert("Payment Updated & Receipt Downloading...");
-
-            } catch (e) {
-                alert('Error updating payment');
-            }
-        }
-
-        async function markUnpaid(userId) {
-            if (!confirm(`⚠️ Are you sure you want to mark this as UNPAID?`)) return;
-            try {
-                await fetch(`${BACKEND_URL}/api/user/${userId}/payment`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ paymentStatus: false })
-                });
-                searchUser();
-            } catch (e) {
-                alert('Error updating payment');
-            }
-        }
-
-        function generateReceiptPDF(userString, mode) {
-            const user = JSON.parse(decodeURIComponent(userString));
-            const amount = TSHIRT_PRICE > 0 ? TSHIRT_PRICE : user.amount;
-            const date = new Date().toLocaleDateString('en-IN');
-
-            // Fill Template
-            document.getElementById('rec-date').innerText = date;
-            document.getElementById('rec-name').innerText = user.fullName;
-            document.getElementById('rec-mobile').innerText = user.mobileNumber;
-            document.getElementById('rec-size').innerText = user.size;
-            document.getElementById('rec-mode').innerText = mode;
-            document.getElementById('rec-amount').innerText = amount;
-
-            // Wait a moment for images to render then print
-            setTimeout(() => {
-                const element = document.getElementById('receipt-template');
-                const opt = {
-                    margin: 10,
-                    filename: `Receipt_${user.fullName}.pdf`,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
-                    jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' }
-                };
-                html2pdf().set(opt).from(element).save();
-            }, 500);
-        }
-    </script>
-</body>
-
-</html>
