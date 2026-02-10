@@ -18,6 +18,7 @@
             background-color: #1a1a2e;
             border-top: 5px solid #ff9f43;
             font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
         }
 
         .hero-section h1 {
@@ -30,46 +31,77 @@
             border-left: 5px solid #ff9f43;
             margin-bottom: 20px;
             animation: slideUp 0.4s ease;
+            background: rgba(255, 255, 255, 0.05);
+            /* Card Background Fix */
+            padding: 20px;
+            border-radius: 10px;
         }
 
+        .detail-row {
+            margin-top: 10px;
+            color: #ccc;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            border-radius: 5px;
+        }
+
+        /* BUTTON FIXES */
         .btn-group {
             display: flex;
             gap: 10px;
             margin-top: 15px;
         }
 
-        .btn-cash {
+        .btn-action-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            /* Fix for squashed buttons */
+        }
+
+        .btn-cash,
+        .btn-upi {
             flex: 1;
-            background: #27ae60;
-            color: white;
             padding: 12px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
+            color: white;
+        }
+
+        .btn-cash {
+            background: #27ae60;
         }
 
         .btn-upi {
-            flex: 1;
             background: #2980b9;
-            color: white;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
         }
 
-        .btn-unpaid {
-            width: 100%;
+        .btn-receipt {
+            flex: 2;
+            /* Bigger button */
+            background: #3498db;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-undo {
+            flex: 1;
             background: #c0392b;
             color: white;
             padding: 10px;
             border: none;
-            border-radius: 8px;
+            border-radius: 5px;
             cursor: pointer;
-            margin-top: 10px;
-            font-size: 0.9rem;
         }
 
         .status-paid {
@@ -79,6 +111,7 @@
             padding: 5px 12px;
             border-radius: 20px;
             border: 1px solid #27ae60;
+            font-size: 0.8rem;
         }
 
         .status-pending {
@@ -88,6 +121,7 @@
             padding: 5px 12px;
             border-radius: 20px;
             border: 1px solid #ff9f43;
+            font-size: 0.8rem;
         }
 
         .search-btn {
@@ -96,19 +130,20 @@
             font-weight: bold;
         }
 
-        /* PDF RECEIPT (Hidden off-screen) */
+        /* --- PDF RECEIPT (HIDDEN & FIXED) --- */
         #receipt-container {
             position: fixed;
-            top: -10000px;
-            /* Hide completely */
-            left: 0;
+            top: 0;
+            left: -10000px;
+            /* Hide completely off-screen */
             z-index: -100;
         }
 
         #receipt-template {
-            width: 600px;
+            width: 550px;
+            /* A5 Width */
             background: #fff;
-            padding: 40px;
+            padding: 30px;
             color: #000;
             font-family: 'Noto Sans Gujarati', sans-serif;
             border: 2px solid #000;
@@ -118,14 +153,32 @@
             text-align: center;
             border-bottom: 2px solid #000;
             padding-bottom: 15px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
+        }
+
+        .rec-top-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
 
         .rec-main-title {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
             color: #d32f2f;
             margin: 5px 0;
+        }
+
+        .rec-sub-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .rec-content {
+            margin-top: 10px;
+            font-size: 16px;
+            line-height: 1.8;
         }
 
         .rec-row {
@@ -133,31 +186,45 @@
             justify-content: space-between;
             border-bottom: 1px dashed #ccc;
             padding-bottom: 5px;
-            margin-bottom: 10px;
-            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .rec-label {
+            font-weight: bold;
+        }
+
+        .rec-value {
+            font-weight: bold;
+            color: #000;
         }
 
         .rec-total-box {
-            margin-top: 30px;
+            margin-top: 20px;
             border: 2px solid #000;
-            padding: 15px;
+            padding: 10px;
             text-align: center;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: bold;
-            background: #f8f8f8;
+            background: #f0f0f0;
         }
 
         .rec-footer {
-            margin-top: 50px;
+            margin-top: 40px;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
         }
 
         .signature-img {
-            height: 70px;
+            height: 60px;
             display: block;
-            margin-bottom: 5px;
+            margin: 0 auto 5px auto;
+        }
+
+        .sign-label {
+            border-top: 1px solid #000;
+            padding-top: 5px;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -196,17 +263,22 @@
     <div id="receipt-container">
         <div id="receipt-template">
             <div class="rec-header">
-                <div style="font-size: 16px; font-weight: bold;">|| જય ગોવિંદસુરા દાદા ||</div>
+                <div class="rec-top-title">|| જય ગોવિંદસુરા દાદા ||</div>
                 <div class="rec-main-title">વડવા કન્યા ટી-શર્ટ માટે રકમ ઉઘરાણી</div>
-                <div style="font-size: 18px; font-weight: bold;">(વડવા કન્યા ગોવિંદસુરા ગ્રુપ)</div>
+                <div class="rec-sub-title">(વડવા કન્યા ગોવિંદસુરા ગ્રુપ)</div>
             </div>
 
-            <div style="margin-top: 20px; line-height: 2;">
-                <div class="rec-row"><span>નામ (Name):</span><strong id="rec-name">--</strong></div>
-                <div class="rec-row"><span>મોબાઈલ (Mobile):</span><strong id="rec-mobile">--</strong></div>
-                <div class="rec-row"><span>ટી-શર્ટ સાઈઝ (Size):</span><strong id="rec-size">--</strong></div>
-                <div class="rec-row"><span>તારીખ (Date):</span><strong id="rec-date">--</strong></div>
-                <div class="rec-row"><span>પેમેન્ટ મોડ (Mode):</span><strong id="rec-mode">--</strong></div>
+            <div class="rec-content">
+                <div class="rec-row"><span class="rec-label">નામ (Name):</span><span class="rec-value"
+                        id="rec-name">--</span></div>
+                <div class="rec-row"><span class="rec-label">મોબાઈલ (Mobile):</span><span class="rec-value"
+                        id="rec-mobile">--</span></div>
+                <div class="rec-row"><span class="rec-label">ટી-શર્ટ સાઈઝ (Size):</span><span class="rec-value"
+                        id="rec-size">--</span></div>
+                <div class="rec-row"><span class="rec-label">તારીખ (Date):</span><span class="rec-value"
+                        id="rec-date">--</span></div>
+                <div class="rec-row"><span class="rec-label">પેમેન્ટ મોડ (Mode):</span><span class="rec-value"
+                        id="rec-mode">--</span></div>
             </div>
 
             <div class="rec-total-box">
@@ -214,12 +286,12 @@
             </div>
 
             <div class="rec-footer">
-                <div style="font-size: 14px; max-width: 300px;">
+                <div style="font-size: 12px; max-width: 250px;">
                     આપના તરફથી ટી-શર્ટ માટે રકમ મળેલ છે, જેનો સાભાર સ્વીકારવામાં આવેલ છે.
                 </div>
                 <div style="text-align: center;">
-                    <img src="sign.jpeg" class="signature-img" alt="Sign">
-                    <div style="border-top: 1px solid #000; padding-top: 5px;">નાણાં વસુલ કરનારની સહી</div>
+                    <img src="sign.jpeg" class="signature-img" alt="Signature">
+                    <div class="sign-label">નાણાં વસુલ કરનારની સહી</div>
                 </div>
             </div>
         </div>
@@ -228,9 +300,8 @@
     <script>
         const BACKEND_URL = 'https://vadva-group-backend-1.onrender.com';
         let TSHIRT_PRICE = 0;
-        let CURRENT_USERS = []; // Store users here to prevent HTML errors
+        let CURRENT_USERS = []; // Global store
 
-        // Load Settings
         fetch(`${BACKEND_URL}/api/settings`)
             .then(res => res.json())
             .then(data => { if (data.tshirtPrice) TSHIRT_PRICE = parseInt(data.tshirtPrice) || 0; });
@@ -258,38 +329,50 @@
                 const users = await res.json();
                 if (users.length === 0) throw new Error();
 
-                CURRENT_USERS = users; // Store in global variable
+                CURRENT_USERS = users; // Store data
 
                 users.forEach((user, i) => {
                     const price = TSHIRT_PRICE > 0 ? TSHIRT_PRICE : user.amount;
                     let content = '';
 
                     if (user.paymentStatus) {
+                        // PAID STATE
                         content = `
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <h2 style="margin:0; color:#fff;">${user.fullName}</h2>
+                                <h2 style="margin:0; font-size:1.2rem; color:#fff;">${user.fullName}</h2>
                                 <span class="status-paid">PAID</span>
                             </div>
-                            <div class="detail-row" style="margin-top:10px; color:#ccc;">Size: ${user.size} | Amt: ₹${price}</div>
-                            <div style="margin-top:15px; display:flex; gap:10px;">
-                                <button onclick="printReceipt(${i}, 'Reprint')" style="flex:1; background:#3498db; color:white; padding:10px; border:none; border-radius:5px; cursor:pointer;">
-                                    <i class="fas fa-print"></i> Receipt
+                            <div class="detail-row">
+                                <span>Size: <strong>${user.size}</strong></span>
+                                <span>Amt: <strong>₹${price}</strong></span>
+                            </div>
+                            <div class="btn-action-group">
+                                <button onclick="printReceipt(${i}, 'Reprint')" class="btn-receipt">
+                                    <i class="fas fa-print"></i> Receipt PDF
                                 </button>
-                                <button onclick="markUnpaid('${user._id}')" style="background:#c0392b; color:white; padding:10px; border:none; border-radius:5px; cursor:pointer;">
+                                <button onclick="markUnpaid('${user._id}')" class="btn-undo">
                                     <i class="fas fa-undo"></i> Undo
                                 </button>
                             </div>
                         `;
                     } else {
+                        // PENDING STATE
                         content = `
                             <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <h2 style="margin:0; color:#fff;">${user.fullName}</h2>
+                                <h2 style="margin:0; font-size:1.2rem; color:#fff;">${user.fullName}</h2>
                                 <span class="status-pending">PENDING</span>
                             </div>
-                            <div class="detail-row" style="margin-top:10px; color:#ccc;">Size: ${user.size} | Amt: ₹${price}</div>
+                            <div class="detail-row">
+                                <span>Size: <strong>${user.size}</strong></span>
+                                <span>Amt: <strong>₹${price}</strong></span>
+                            </div>
                             <div class="btn-group">
-                                <button onclick="markPaid('${user._id}', 'Cash', ${i})" class="btn-cash">Cash</button>
-                                <button onclick="markPaid('${user._id}', 'Online', ${i})" class="btn-upi">Online</button>
+                                <button onclick="markPaid('${user._id}', 'Cash', ${i})" class="btn-cash">
+                                    <i class="fas fa-money-bill"></i> Cash
+                                </button>
+                                <button onclick="markPaid('${user._id}', 'Online', ${i})" class="btn-upi">
+                                    <i class="fas fa-qrcode"></i> Online
+                                </button>
                             </div>
                         `;
                     }
@@ -308,7 +391,6 @@
 
         async function markPaid(id, mode, index) {
             if (!confirm(`Confirm payment via ${mode}?`)) return;
-
             try {
                 await fetch(`${BACKEND_URL}/api/user/${id}/payment`, {
                     method: 'PUT',
@@ -316,9 +398,8 @@
                     body: JSON.stringify({ paymentStatus: true })
                 });
 
-                printReceipt(index, mode); // Generate PDF
-                searchUser(); // Refresh Page
-                alert("Paid Successfully! Downloading Receipt...");
+                printReceipt(index, mode); // Auto print
+                setTimeout(searchUser, 1000); // Refresh UI
             } catch (e) { alert('Error'); }
         }
 
@@ -337,13 +418,16 @@
             const amount = TSHIRT_PRICE > 0 ? TSHIRT_PRICE : user.amount;
             const date = new Date().toLocaleDateString('en-IN');
 
+            // Set Data
             document.getElementById('rec-date').innerText = date;
             document.getElementById('rec-name').innerText = user.fullName;
-            document.getElementById('rec-mobile').innerText = user.mobileNumber;
+            // Fix for undefined Mobile: Try user.mobileNumber, then user.mobile, then "N/A"
+            document.getElementById('rec-mobile').innerText = user.mobileNumber || user.mobile || document.getElementById('mobileInput').value;
             document.getElementById('rec-size').innerText = user.size;
             document.getElementById('rec-mode').innerText = mode;
             document.getElementById('rec-amount').innerText = amount;
 
+            // Generate
             const element = document.getElementById('receipt-template');
             const opt = {
                 margin: 0,
@@ -353,10 +437,7 @@
                 jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' }
             };
 
-            // Wait 500ms to ensure hidden element renders
-            setTimeout(() => {
-                html2pdf().set(opt).from(element).save();
-            }, 500);
+            html2pdf().set(opt).from(element).save();
         }
     </script>
 </body>
