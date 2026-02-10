@@ -13,7 +13,7 @@
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 
     <style>
-        /* Base Styles */
+        /* Base Styles - Same as before */
         body {
             background-color: #1e1e2f;
         }
@@ -261,18 +261,18 @@
         let CUSTOM_QR = '';
         let TSHIRT_PRICE = 0;
         let TOTAL_AMOUNT = 0;
+        let ADMIN_UPI_ID = '';
 
-        // Fetch Settings (Price & Custom QR)
+        // Fetch Settings
         fetch(`${BACKEND_URL}/api/settings`)
             .then(res => res.json())
             .then(data => {
                 if (data.tshirtPrice) TSHIRT_PRICE = parseInt(data.tshirtPrice) || 0;
+                if (data.upiId) ADMIN_UPI_ID = data.upiId;
 
-                // Get Custom QR Path
                 if (data.qrImage) {
                     CUSTOM_QR = data.qrImage.startsWith('http') ? data.qrImage : `${BACKEND_URL}${data.qrImage}`;
                 }
-
                 if (data.bgImage) {
                     const bgUrl = data.bgImage.startsWith('http') ? data.bgImage : `${BACKEND_URL}${data.bgImage}`;
                     document.body.style.backgroundImage = `url('${bgUrl}')`;
@@ -286,7 +286,6 @@
             const paymentArea = document.getElementById('paymentArea');
             const errorMsg = document.getElementById('errorMsg');
 
-            // Reset UI
             resultSection.classList.add('hidden');
             errorMsg.classList.add('hidden');
             ordersContainer.innerHTML = '';
@@ -338,7 +337,6 @@
                 document.getElementById('totalAmount').textContent = `₹${TOTAL_AMOUNT}`;
 
                 if (allPaid) {
-                    // CASE 1: Already Paid -> Show Receipt Button
                     paymentArea.innerHTML = `
                         <button onclick='showReceipt(${JSON.stringify(paidUsersForReceipt)}, ${paidAmount})' class="view-receipt-btn">
                             <i class="fas fa-file-invoice"></i> View & Download Receipt
@@ -346,30 +344,23 @@
                         <p style="text-align:center; color:#81c784; margin-top:10px;"><i class="fas fa-check-circle"></i> Payment Completed</p>
                     `;
                 } else {
-                    // CASE 2: Payment Pending -> Show Only Custom QR + Screenshot Upload
-
-                    let qrHtml = '';
-                    if (CUSTOM_QR) {
-                        qrHtml = `<div class="qr-display">
-                                    <p style="margin-bottom:10px; color:#fff;">Scan this QR to Pay:</p>
-                                    <img src="${CUSTOM_QR}" alt="Payment QR">
-                                  </div>`;
-                    } else {
-                        qrHtml = `<p style="color:#ffb74d;">No QR Code uploaded by Admin. Please contact admin.</p>`;
-                    }
+                    let qrHtml = CUSTOM_QR ?
+                        `<div class="qr-display">
+                            <p style="margin-bottom:10px; color:#fff;">Scan this QR to Pay:</p>
+                            <img src="${CUSTOM_QR}" alt="Payment QR">
+                         </div>` :
+                        `<p style="color:#ffb74d;">No QR Code uploaded by Admin.</p>`;
 
                     paymentArea.innerHTML = `
                         <div class="payment-box">
                             ${qrHtml}
-                            
                             <div class="upload-area">
                                 <p style="text-align:left; color:#a5a1ff; font-size:0.9rem; margin-bottom:5px;">
                                     <i class="fas fa-upload"></i> <strong>Verification Required:</strong>
                                 </p>
                                 <p style="text-align:left; font-size:0.8rem; color:#ccc; margin-bottom:10px;">
-                                    Upload payment screenshot to verify & get receipt.
+                                    Upload payment screenshot.<br>System will verify <strong>Amount</strong> and <strong>Receiver UPI ID</strong>.
                                 </p>
-                                
                                 <input type="file" id="screenshotInput" accept="image/*" class="file-input" onchange="verifyScreenshot(this)">
                                 <div id="ocrStatus" class="status-msg" style="color:#aaa;">Waiting for upload...</div>
                             </div>
@@ -386,67 +377,75 @@
             }
         }
 
-        // --- AUTOMATIC VERIFICATION LOGIC ---
+        // --- ENHANCED VERIFICATION LOGIC ---
         async function verifyScreenshot(input) {
             const file = input.files[0];
             if (!file) return;
 
             const status = document.getElementById('ocrStatus');
-            status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning image... (Please wait 10-20s)';
+            status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing screenshot... (10-20s)';
             status.style.color = "#ffb74d";
 
             try {
-                // 1. Initialize Tesseract
                 const worker = await Tesseract.createWorker('eng');
-
-                // 2. Recognize Text from Image
                 const ret = await worker.recognize(file);
-                const text = ret.data.text.toLowerCase();
+                const rawText = ret.data.text.toLowerCase();
                 await worker.terminate();
 
-                console.log("Scanned Text:", text); // Debugging
+                console.log("Scanned Text:", rawText);
 
-                // 3. Validation Logic (Strict Check)
-                // - Must contain "success", "paid", etc.
-                // - Must contain the exact Amount
+                // 1. Status Keywords
+                const keywords = ['success', 'paid', 'completed', 'done', 'successful', 'sent', 'transfer', 'transaction'];
+                const isSuccess = keywords.some(word => rawText.includes(word));
 
-                const isSuccess = text.includes('success') || text.includes('paid') || text.includes('completed') || text.includes('done') || text.includes('successful');
+                // 2. Amount Check (Strict & Smart)
+                const numbersFound = rawText.match(/(\d+(?:\.\d+)?)/g);
+                let amountFound = false;
+                if (numbersFound) {
+                    amountFound = numbersFound.some(numStr => parseFloat(numStr) === TOTAL_AMOUNT);
+                }
+                if (!amountFound) {
+                    const cleanText = rawText.replace(/,/g, '');
+                    amountFound = cleanText.includes(TOTAL_AMOUNT.toString());
+                }
 
-                // રકમ ચેક કરવી (Amount check)
-                const amountStr = TOTAL_AMOUNT.toString();
-                // આપણે ખાલી નંબર (500) અથવા પોઈન્ટ સાથે (500.00) અથવા રૂ (₹500) ચેક કરીએ
-                const amountFound = text.includes(amountStr) || text.includes(amountStr + '.00') || text.includes(amountStr + ' .00');
+                // 3. Receiver UPI ID Check
+                const targetUPI = ADMIN_UPI_ID.toLowerCase().trim();
+                const upiHandle = targetUPI.split('@')[0]; // e.g. "buchiyasachin8"
 
-                if (isSuccess && amountFound) {
+                // OCR might confuse '@' with 'a' or '©', so we check handle too
+                const upiFound = rawText.includes(targetUPI) || rawText.includes(upiHandle);
+
+                if (isSuccess && amountFound && upiFound) {
                     status.innerHTML = '<i class="fas fa-check-circle"></i> Verified! Updating Database...';
                     status.style.color = "#4caf50";
-
-                    // 4. If Verified, Update Backend Database
                     await updateDatabaseAsPaid();
-
                 } else {
-                    status.innerHTML = `<i class="fas fa-times-circle"></i> Verification Failed.<br>
-                                        Screenshot must show "Success" & Amount ₹${TOTAL_AMOUNT}`;
-                    status.style.color = "#e53935";
+                    let failReason = "";
+                    if (!isSuccess) failReason += "<li>Status 'Completed/Paid' not found.</li>";
+                    if (!amountFound) failReason += `<li>Amount ₹${TOTAL_AMOUNT} not found.</li>`;
+                    if (!upiFound) failReason += `<li>Receiver UPI ID (${upiHandle}...) not found.</li>`;
+
+                    status.innerHTML = `<ul style="text-align:left; color:#e53935; font-size:0.8rem; padding-left:15px;">
+                                            <strong>Verification Failed:</strong>
+                                            ${failReason}
+                                        </ul>`;
                 }
 
             } catch (e) {
                 console.error(e);
-                status.innerText = "Error scanning image. Try another clear screenshot.";
+                status.innerText = "Error scanning image. Try a clearer screenshot.";
                 status.style.color = "#e53935";
             }
         }
 
         async function updateDatabaseAsPaid() {
             const mobile = document.getElementById('mobileInput').value;
-
             try {
-                // Get Users
                 const res = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
                 const users = await res.json();
                 const unpaid = users.filter(u => !u.paymentStatus);
 
-                // Update Status in Database
                 await Promise.all(unpaid.map(u =>
                     fetch(`${BACKEND_URL}/api/user/${u._id}/payment`, {
                         method: 'PUT',
@@ -455,10 +454,8 @@
                     })
                 ));
 
-                // Refresh UI (Shows Receipt Button now)
                 await searchUser();
                 alert("Payment Verified & Database Updated! ✅");
-
             } catch (e) {
                 alert('Database update failed. Please try again.');
             }
