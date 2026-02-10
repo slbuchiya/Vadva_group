@@ -200,16 +200,6 @@
                     <a id="upiLink" href="#" class="upi-btn">
                         <i class="fas fa-external-link-alt"></i> Open UPI App
                     </a>
-
-                    <div style="margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-                        <button id="markPaidBtn" onclick="handlePaymentAndPrint()"
-                            style="background: #e53935; width: 100%; padding: 12px; border-radius: 8px; font-weight: 600; color: white; border: none; cursor: pointer;">
-                            <i class="fas fa-check-circle"></i> Confirm Payment Received
-                        </button>
-                        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 8px;">
-                            (Click ONLY after receiving money)
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>
@@ -410,33 +400,21 @@
                     status.innerHTML = '<i class="fas fa-check-circle"></i> Verified! Updating payment...';
                     status.style.color = "#4caf50";
 
-                    // Auto-Update Payment (Skip confirmation dialog)
-                    await handlePaymentAndPrint(true);
+                    // Auto-Update Payment
+                    await handlePaymentUpdate();
                 } else {
-                    status.innerHTML = '<i class="fas fa-times-circle"></i> Could not verify. Please ensure amount matches.';
+                    status.innerHTML = '<i class="fas fa-times-circle"></i> Could not verify automatically. Please upload clear screenshot showing "Success" and Amount.';
                     status.style.color = "#e53935";
                 }
             } catch (e) {
                 console.error(e);
-                status.innerText = "Error scanning image. Try manual confirm.";
+                status.innerText = "Error scanning image.";
                 status.style.color = "#e53935";
             }
         }
 
-        async function handlePaymentAndPrint(autoVerify = false) {
-            // If manual click, ask for confirmation. If autoVerify, skip confirmation.
-            if (!autoVerify) {
-                if (!confirm(`Confirm that you have received ₹${TOTAL_AMOUNT}?`)) return;
-            }
-
-            const btn = document.getElementById('markPaidBtn');
-            if (btn) {
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-                btn.disabled = true;
-            }
-
+        async function handlePaymentUpdate() {
             const mobile = document.getElementById('mobileInput').value;
-
             try {
                 const res = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
                 const users = await res.json();
@@ -450,11 +428,8 @@
                     })
                 ));
 
-                await searchUser(); // Refresh UI
-
-                if (autoVerify) {
-                    alert("Payment Verified & Updated Successfully! Receipt is ready.");
-                }
+                await searchUser(); // Refresh UI to show Receipt button
+                alert("Payment Verified Successfully! Receipt is ready.");
 
             } catch (e) {
                 alert('Error updating payment.');
