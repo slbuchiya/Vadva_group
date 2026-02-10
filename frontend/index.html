@@ -13,7 +13,7 @@
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 
     <style>
-        /* Base Styles */
+        /* Base Styles - Same as before */
         body {
             background-color: #1e1e2f;
         }
@@ -391,20 +391,23 @@
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                     const data = imageData.data;
 
-                    // Check brightness to detect Dark Mode
+                    // Simple logic: Invert Dark Mode to Light Mode
+                    // If image looks dark (average brightness low), invert colors
+                    let r, g, b, avg;
                     let totalBrightness = 0;
-                    for (let i = 0; i < data.length; i += 4) {
-                        // Human eye perception formula
-                        totalBrightness += (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
-                    }
-                    const avgBrightness = totalBrightness / (data.length / 4);
 
-                    // If image is dark (avg brightness < 100), Invert it to make text black on white
-                    if (avgBrightness < 100) {
+                    for (let i = 0; i < data.length; i += 4) {
+                        r = data[i]; g = data[i + 1]; b = data[i + 2];
+                        totalBrightness += (r + g + b) / 3;
+                    }
+                    const overallAvg = totalBrightness / (data.length / 4);
+
+                    // If Dark Mode detected (avg < 100), invert text to Black on White
+                    if (overallAvg < 100) {
                         for (let i = 0; i < data.length; i += 4) {
-                            data[i] = 255 - data[i];     // Red
-                            data[i + 1] = 255 - data[i + 1]; // Green
-                            data[i + 2] = 255 - data[i + 2]; // Blue
+                            data[i] = 255 - data[i];
+                            data[i + 1] = 255 - data[i + 1];
+                            data[i + 2] = 255 - data[i + 2];
                         }
                         ctx.putImageData(imageData, 0, 0);
                     }
@@ -415,55 +418,54 @@
             });
         }
 
-        // --- ENHANCED VERIFICATION LOGIC WITH PRE-PROCESSING ---
+        // --- FINAL VERIFICATION LOGIC ---
         async function verifyScreenshot(input) {
             const file = input.files[0];
             if (!file) return;
 
             const status = document.getElementById('ocrStatus');
-            status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing screenshot... (Cleaning Dark Mode...)';
+            status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing screenshot...';
             status.style.color = "#ffb74d";
 
             try {
-                // 1. Pre-process Image (Invert Dark Mode)
-                const processedImageSrc = await preprocessImage(file);
+                // 1. Process Image (Fix Dark Mode)
+                const processedImgSrc = await preprocessImage(file);
 
                 const worker = await Tesseract.createWorker('eng');
-                const ret = await worker.recognize(processedImageSrc);
+                const ret = await worker.recognize(processedImgSrc);
                 const rawText = ret.data.text.toLowerCase();
-                // Create a "clean" text version without spaces for ID matching
+                // Remove spaces to verify ID properly
                 const cleanText = rawText.replace(/\s+/g, '');
 
                 await worker.terminate();
 
-                console.log("Scanned Text:", rawText);
+                console.log("Scanned:", rawText);
 
-                // 2. Check Status Keywords
+                // 1. Status Check
                 const keywords = ['success', 'paid', 'completed', 'done', 'sent', 'transaction'];
                 const isSuccess = keywords.some(word => rawText.includes(word));
 
-                // 3. Check Amount (Robust Check)
+                // 2. Amount Check (Simplified - Only Number)
+                // Remove everything that is NOT a number, then check if 700 exists
                 const amountStr = TOTAL_AMOUNT.toString();
-                // Check simple presence
-                let amountFound = rawText.includes(amountStr) || rawText.includes(`₹${amountStr}`) || rawText.includes(amountStr + '.00');
+                // We check if "700" is present anywhere in the text.
+                // We remove commas just in case (1,000 -> 1000)
+                const textWithoutCommas = rawText.replace(/,/g, '');
+                const amountFound = textWithoutCommas.includes(amountStr);
 
-                // If simple check fails, check clean text (e.g. "₹ 700" becomes "₹700")
-                if (!amountFound) {
-                    amountFound = cleanText.includes(amountStr) || cleanText.includes(`₹${amountStr}`);
-                }
-
-                // 4. Check Receiver UPI ID (Handle Only)
+                // 3. Receiver UPI ID Check (Handle Only)
                 let upiFound = false;
                 let expectedHandle = "";
 
                 if (ADMIN_UPI_ID) {
                     expectedHandle = ADMIN_UPI_ID.toLowerCase().split('@')[0].trim();
+                    // Check in raw text OR clean text (for spaced out letters)
                     upiFound = rawText.includes(expectedHandle) || cleanText.includes(expectedHandle);
                 } else {
-                    upiFound = true; // Bypass check if not configured
+                    upiFound = true; // Bypass
                 }
 
-                // --- FINAL DECISION ---
+                // --- DECISION ---
                 if (isSuccess && amountFound && upiFound) {
                     status.innerHTML = '<i class="fas fa-check-circle"></i> Verified! Updating Database...';
                     status.style.color = "#4caf50";
@@ -471,19 +473,18 @@
                 } else {
                     let failReason = "";
                     if (!isSuccess) failReason += "<li>Status 'Completed/Paid' not found.</li>";
-                    if (!amountFound) failReason += `<li>Amount ₹${TOTAL_AMOUNT} not found.</li>`;
-                    if (!upiFound && ADMIN_UPI_ID) failReason += `<li>Receiver ID '${expectedHandle}' not found.</li>`;
+                    if (!amountFound) failReason += `<li>Amount ${TOTAL_AMOUNT} not found.</li>`;
+                    if (!upiFound) failReason += `<li>Receiver ID '${expectedHandle}' not found.</li>`;
 
-                    status.innerHTML = `<ul style="text-align:left; color:#e53935; font-size:0.8rem; padding-left:15px; margin-top:5px;">
+                    status.innerHTML = `<ul style="text-align:left; color:#e53935; font-size:0.8rem; padding-left:15px;">
                                             <strong>Verification Failed:</strong>
                                             ${failReason}
-                                            <br>Try uploading a clearer screenshot.
                                         </ul>`;
                 }
 
             } catch (e) {
                 console.error(e);
-                status.innerText = "Error scanning image. Please try again.";
+                status.innerText = "Error scanning image.";
                 status.style.color = "#e53935";
             }
         }
@@ -506,7 +507,7 @@
                 await searchUser();
                 alert("Payment Verified & Database Updated! ✅");
             } catch (e) {
-                alert('Database update failed. Please try again.');
+                alert('Database update failed.');
             }
         }
 
